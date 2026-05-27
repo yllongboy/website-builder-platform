@@ -1,0 +1,26 @@
+# Database Schema
+
+Primary database: PostgreSQL  
+Migration tool: Flyway  
+Primary keys: UUID  
+Main schema file: `services/api/src/main/resources/db/migration/V1__init_schema.sql`
+
+## Tables
+
+- users
+- categories
+- templates
+- websites
+- website_versions
+- assets
+- subscriptions
+- publish_logs
+- stripe_events
+
+## Important Rules
+
+- `websites.user_id + websites.slug` must be unique.
+- Only one current website version is allowed per website.
+- Stripe events are stored to prevent duplicate webhook processing.
+- Publishing must validate subscription status server-side.
+- Website access must always validate ownership server-side.

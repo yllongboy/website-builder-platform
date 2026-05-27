@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@source "./app/**/*.{ts,html}";
+@import "./theme.css" layer(theme);
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-background-subtle);
+  color: var(--color-foreground);
+}
+
+button, input, select, textarea {
+  font: inherit;
+}

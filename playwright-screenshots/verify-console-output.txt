@@ -1,0 +1,3 @@
+Desktop measurements: {"canvasWidth":928,"framesWidth":928,"frameWrapperWidth":0,"iframeWidth":0,"iframeHeight":600}
+Tablet measurements: {"framesWidth":928,"frameWrapperWidth":768,"frameWrapperInlineStyle":"left: 0px; top: 0px; width: 768px;","iframeWidth":768}
+Done

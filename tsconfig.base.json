@@ -1,0 +1,32 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "useDefineForClassFields": false,
+    "lib": ["ES2022", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@platform/shared-models": ["libs/shared-models/src/index.ts"],
+      "@platform/api-client": ["libs/api-client/src/index.ts"],
+      "@platform/auth": ["libs/auth/src/index.ts"],
+      "@platform/billing": ["libs/billing/src/index.ts"],
+      "@platform/editor": ["libs/editor/src/index.ts"],
+      "@platform/shared-ui": ["libs/shared-ui/src/index.ts"],
+      "@platform/shared-utils": ["libs/shared-utils/src/index.ts"],
+      "@platform/templates": ["libs/templates/src/index.ts"],
+      "@platform/websites": ["libs/websites/src/index.ts"],
+      "@platform/ui": ["libs/ui/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

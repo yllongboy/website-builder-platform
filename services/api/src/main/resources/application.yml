@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: website-builder-platform-api
+  servlet:
+    multipart:
+      max-request-size: 2MB
+      max-file-size: 2MB
+
+server:
+  servlet:
+    context-path: /api
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+
+cloudflare:
+  r2:
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID:placeholder}
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:placeholder}
+    access-key-secret: ${CLOUDFLARE_R2_ACCESS_KEY_SECRET:placeholder}
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME:placeholder}
+    public-url-base: ${CLOUDFLARE_R2_PUBLIC_URL_BASE:https://pub.sites.example.com}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_placeholder}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/billing?success=true}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/billing?canceled=true}
+  portal-return-url: ${STRIPE_PORTAL_RETURN_URL:http://localhost:4200/billing}
+  plans:
+    pro:
+      price-id: ${STRIPE_PRO_PRICE_ID:price_placeholder}

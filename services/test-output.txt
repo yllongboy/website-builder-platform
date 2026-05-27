@@ -1,0 +1,83 @@
+﻿mvn : WARNING: A Java agent has been loaded dynamically (C:\Users\Rolly\.m2\rep
+ository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
+At line:1 char:128
++ ... \projects\website-builder-platform\services; mvn test -q 2>&1 | Out-F ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A Java...nt-1.14.19.jar) 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: If a serviceability tool is in use, please run with 
+-XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with 
+-Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future 
+release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader 
+classes because bootstrap classpath has been appended
+[ERROR] Tests run: 4, Failures: 0, Errors: 4, Skipped: 0, Time elapsed: 0.610 s <<< FAILURE! -- in com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest
+[ERROR] com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.saveEditorStateThrowsWebsiteNotFoundWhenWebsiteDoesNotBelongToUser -- Time elapsed: 0.564 s <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+	at com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.setUp(WebsiteServiceEditorTest.java:56)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.loadEditorStateThrowsWebsiteNotFoundWhenWebsiteDoesNotBelongToUser -- Time elapsed: 0.009 s <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+	at com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.setUp(WebsiteServiceEditorTest.java:56)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.saveEditorStateSanitizesHtmlBeforeSaving -- Time elapsed: 0.010 s <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+	at com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.setUp(WebsiteServiceEditorTest.java:56)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.loadEditorStateReturnsEmptyFallbackWhenCurrentVersionMissing -- Time elapsed: 0.007 s <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+	at com.websitebuilder.platform.websites.service.WebsiteServiceEditorTest.setUp(WebsiteServiceEditorTest.java:56)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Errors: 
+[ERROR]   WebsiteServiceEditorTest.setUp:56  Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+[ERROR]   WebsiteServiceEditorTest.setUp:56  Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+[ERROR]   WebsiteServiceEditorTest.setUp:56  Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+[ERROR]   WebsiteServiceEditorTest.setUp:56  Unresolved compilation problem: 
+	The constructor WebsiteService(WebsiteRepository, WebsiteVersionRepository, TemplateRepository, WebsiteMapper, HtmlSanitizer) is undefined
+
+[ERROR] Tests run: 13, Failures: 0, Errors: 4, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project platform-api: 
+[ERROR] 
+[ERROR] Please refer to D:\projects\website-builder-platform\services\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

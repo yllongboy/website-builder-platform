@@ -1,0 +1,2 @@
+ALTER TABLE publish_logs DROP CONSTRAINT IF EXISTS chk_publish_logs_status;
+ALTER TABLE publish_logs ADD CONSTRAINT chk_publish_logs_status CHECK (status IN ('STARTED', 'SUCCESS', 'FAILED', 'UNPUBLISHED'));

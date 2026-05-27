@@ -1,0 +1,23 @@
+{
+  "name": "templates",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/templates/src",
+  "prefix": "platform",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/templates",
+        "main": "libs/templates/src/index.ts",
+        "tsConfig": "libs/templates/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": { "lintFilePatterns": ["libs/templates/**/*.ts"] }
+    }
+  }
+}

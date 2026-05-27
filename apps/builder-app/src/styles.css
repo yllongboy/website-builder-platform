@@ -1,0 +1,84 @@
+@import "grapesjs/dist/css/grapes.min.css";
+@import "tailwindcss";
+@import "./theme.css";
+@source "../../../apps/**/*.{ts,html}";
+@source "../../../libs/**/*.{ts,html}";
+
+/* ── GrapesJS theme: override built-in dark-theme CSS variables ── */
+:root {
+	--gjs-main-color: #f8fafc;
+	--gjs-primary-color: #f8fafc;
+	--gjs-secondary-color: #e2e8f0;
+	--gjs-tertiary-color: #4f46e5;
+	--gjs-quaternary-color: #7c3aed;
+	--gjs-font-color: #334155;
+	--gjs-font-color-active: #0f172a;
+	--gjs-main-dark-color: rgba(0, 0, 0, 0.07);
+	--gjs-secondary-dark-color: rgba(0, 0, 0, 0.05);
+	--gjs-main-light-color: rgba(0, 0, 0, 0.05);
+	--gjs-secondary-light-color: rgba(0, 0, 0, 0.6);
+	--gjs-left-width: 0px;
+}
+
+/* ── Direct GrapesJS element overrides (correct class names) ─── */
+/* Sector / category titles */
+.gjs-sm-sector-title,
+.gjs-category-title,
+.gjs-block-category .gjs-title,
+.gjs-trait-category .gjs-title,
+.gjs-layer-title {
+	background-color: #f1f5f9 !important;
+	color: #1e293b !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.gjs-sm-sector-label { color: #1e293b !important; }
+.gjs-sm-sector-caret svg { fill: #64748b !important; }
+
+/* Font color class that GrapesJS applies to icons and text */
+.gjs-color-main { color: #334155 !important; fill: #334155 !important; }
+.gjs-four-clr { color: #334155 !important; fill: #334155 !important; }
+
+/* Fields and inputs */
+.gjs-field {
+	background-color: #ffffff !important;
+	color: #1e293b !important;
+	border: 1px solid #e2e8f0 !important;
+	box-shadow: none !important;
+}
+.gjs-field input, .gjs-field select, .gjs-field textarea { color: #1e293b !important; }
+.gjs-sm-field input, .gjs-sm-field select { color: #1e293b !important; background-color: transparent !important; }
+.gjs-sm-unit, .gjs-field-unit, .gjs-input-unit { color: #64748b !important; }
+
+/* Layer manager */
+.gjs-layer-item {
+	background-color: #ffffff !important;
+	color: #334155 !important;
+	border-bottom: 1px solid #f1f5f9 !important;
+}
+.gjs-layer-item:hover, .gjs-layer.gjs-hovered .gjs-layer-item { background-color: #f8fafc !important; }
+.gjs-layer.gjs-selected .gjs-layer-item { background-color: #ede9fe !important; }
+.gjs-layer-name { color: #334155 !important; }
+
+/* Traits */
+.gjs-trt-trait { color: #334155 !important; }
+.gjs-trt-header { color: #334155 !important; }
+.gjs-label { color: #475569 !important; }
+
+/* Block labels */
+.gjs-block-label { color: #334155 !important; }
+.gjs-block { color: #334155 !important; border-color: #e2e8f0 !important; }
+.gjs-block svg { fill: #64748b !important; stroke: #64748b !important; }
+
+/* Class manager */
+.gjs-clm-tag { background-color: #f1f5f9 !important; color: #1e293b !important; }
+
+/* Select dropdowns */
+.gjs-field-select select, .gjs-sm-select option {
+	background-color: #ffffff !important;
+	color: #1e293b !important;
+}
+
+/* Scrollbar */
+.gjs-editor-cont ::-webkit-scrollbar-track { background: #f1f5f9 !important; }
+.gjs-editor-cont ::-webkit-scrollbar-thumb { background-color: #cbd5e1 !important; }

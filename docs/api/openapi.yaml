@@ -1,0 +1,1273 @@
+openapi: 3.0.3
+info:
+  title: Website Builder Platform API
+  version: 0.1.0
+  description: MVP API contract for the Website Builder Platform.
+servers:
+  - url: http://localhost:8080/api
+    description: Local API
+  - url: https://api.staging.example.com/api
+    description: Staging API
+  - url: https://api.example.com/api
+    description: Production API
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Categories
+  - name: Templates
+  - name: Websites
+  - name: Billing
+  - name: Admin
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current user (revoke JWT server-side)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful - token revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List public active categories
+      security: []
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CategoryResponse' }
+
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List public active templates
+      security: []
+      parameters:
+        - name: categorySlug
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Template summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TemplateSummary' }
+
+  /templates/{templateId}:
+    get:
+      tags: [Templates]
+      summary: Get template detail
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/TemplateId' }
+      responses:
+        '200':
+          description: Template detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TemplateDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /websites/from-template/{templateId}:
+    post:
+      tags: [Websites]
+      summary: Create website from template
+      parameters:
+        - { $ref: '#/components/parameters/TemplateId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateWebsiteFromTemplateRequest' }
+      responses:
+        '200':
+          description: Website created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebsiteSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /websites:
+    post:
+      tags: [Websites]
+      summary: Create blank website
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBlankWebsiteRequest' }
+      responses:
+        '200':
+          description: Website created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebsiteSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /websites/my:
+    get:
+      tags: [Websites]
+      summary: List current user's websites
+      responses:
+        '200':
+          description: Website list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WebsiteSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /websites/{websiteId}:
+    patch:
+      tags: [Websites]
+      summary: Update website metadata
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateWebsiteRequest' }
+      responses:
+        '200':
+          description: Website updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebsiteSummary' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Websites]
+      summary: Delete website
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /websites/{websiteId}/editor:
+    get:
+      tags: [Websites]
+      summary: Load website editor state
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Editor state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EditorStateResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Websites]
+      summary: Save website editor state
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveEditorStateRequest' }
+      responses:
+        '200':
+          description: Save result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SaveEditorStateResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /websites/{websiteId}/preview:
+    get:
+      tags: [Websites]
+      summary: Get website preview content
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Preview content
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PreviewResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Website not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /websites/{websiteId}/publish:
+    post:
+      tags: [Websites]
+      summary: Publish website
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Publish response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublishResponse' }
+        '402': { $ref: '#/components/responses/SubscriptionRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Websites]
+      summary: Unpublish website
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '204':
+          description: Website unpublished successfully
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Website is not published
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /websites/{websiteId}/republish:
+    post:
+      tags: [Websites]
+      summary: Republish website with latest content
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Republish response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublishResponse' }
+        '402': { $ref: '#/components/responses/SubscriptionRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Website is not published (cannot republish a draft)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /websites/{websiteId}/publish-logs:
+    get:
+      tags: [Websites]
+      summary: Get publish history for a website
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Publish log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PublishLogResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /websites/{websiteId}/publish-status:
+    get:
+      tags: [Websites]
+      summary: Get publish status
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      responses:
+        '200':
+          description: Publish status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublishStatusResponse' }
+
+  /billing/status:
+    get:
+      tags: [Billing]
+      summary: Get billing status for current user
+      responses:
+        '200':
+          description: Billing status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BillingStatusResponse' }
+
+  /billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Create Stripe Checkout session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckoutRequest' }
+      responses:
+        '200':
+          description: Checkout session URL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutResponse' }
+
+  /billing/webhook:
+    post:
+      tags: [Billing]
+      summary: Stripe webhook endpoint
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Webhook accepted
+
+  /billing/portal:
+    post:
+      tags: [Billing]
+      summary: Create Stripe Customer Portal session
+      responses:
+        '200':
+          description: Portal session URL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PortalResponse' }
+        '402': { $ref: '#/components/responses/SubscriptionRequired' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List users
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by email (case-insensitive contains match)
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+          description: Filter by user status
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserRole'
+          description: Filter by user role
+      responses:
+        '200':
+          description: Admin user list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminUserResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/users/{userId}:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get user detail by ID
+      description: Requires ROLE_ADMIN.
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/users/{userId}/status:
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Suspend or reactivate a user
+      description: Requires ROLE_ADMIN.
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserStatusRequest' }
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/metrics:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get admin dashboard metrics
+      description: Returns admin dashboard aggregate metrics. Requires ROLE_ADMIN.
+      responses:
+        '200':
+          description: Admin dashboard metrics
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMetricsResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/categories:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List all categories
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminCategoryResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryUpsertRequest' }
+      responses:
+        '200':
+          description: Category created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminCategoryResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/categories/{categoryId}:
+    put:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update category
+      parameters:
+        - { $ref: '#/components/parameters/CategoryId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryUpsertRequest' }
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminCategoryResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Delete category
+      parameters:
+        - { $ref: '#/components/parameters/CategoryId' }
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/templates:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List all templates
+      responses:
+        '200':
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminTemplateResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Create template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TemplateUpsertRequest' }
+      responses:
+        '200':
+          description: Template created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTemplateResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/templates/{templateId}:
+    put:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update template
+      parameters:
+        - { $ref: '#/components/parameters/TemplateId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TemplateUpsertRequest' }
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTemplateResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Delete template
+      parameters:
+        - { $ref: '#/components/parameters/TemplateId' }
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/websites:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List all websites
+      responses:
+        '200':
+          description: Admin website overview
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminWebsiteResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/websites/{websiteId}/status:
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update website status (admin action)
+      description: Requires ROLE_ADMIN.
+      parameters:
+        - { $ref: '#/components/parameters/WebsiteId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminWebsiteStatusRequest' }
+      responses:
+        '200':
+          description: Website updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminWebsiteResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/billing/overview:
+    get:
+      summary: Get admin billing overview
+      description: Returns MRR, ARR, total active subscriptions, and plan distribution counts.
+      tags:
+        - Admin Billing
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Billing overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminBillingOverviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/billing/invoices:
+    get:
+      summary: Get admin invoice list
+      description: Returns a paginated list of invoices from Stripe.
+      tags:
+        - Admin Billing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        '200':
+          description: Invoice list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminInvoicePageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/billing/subscriptions:
+    get:
+      tags: [Admin]
+      summary: List all subscriptions (paginated)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0, maximum: 999 }
+          description: Zero-based page number
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+          description: Page size (max 100)
+      responses:
+        '200':
+          description: Paginated subscription list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminSubscriptionPageResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/billing/subscriptions/{userId}/cancel:
+    post:
+      summary: Cancel a user subscription
+      description: Immediately cancels the Stripe subscription for the specified user.
+      tags:
+        - Admin Billing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the user whose subscription will be cancelled
+      responses:
+        '200':
+          description: Subscription cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    WebsiteId:
+      name: websiteId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    SubscriptionRequired:
+      description: Active subscription required
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+
+  schemas:
+    UserRole:
+      type: string
+      enum: [USER, ADMIN]
+    UserStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, DELETED]
+    WebsiteStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, ARCHIVED]
+    SubscriptionStatus:
+      type: string
+      enum: [ACTIVE, TRIALING, PAST_DUE, CANCELED, INCOMPLETE, NONE]
+    PublishLogStatus:
+      type: string
+      enum: [STARTED, SUCCESS, FAILED, NOT_PUBLISHED, UNPUBLISHED]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 128 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    AuthResponse:
+      type: object
+      required: [accessToken, user]
+      properties:
+        accessToken: { type: string }
+        user: { $ref: '#/components/schemas/UserSummary' }
+
+    UserSummary:
+      type: object
+      required: [id, email, role]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/UserRole' }
+
+    UserDetail:
+      allOf:
+        - { $ref: '#/components/schemas/UserSummary' }
+        - type: object
+          properties:
+            status: { $ref: '#/components/schemas/UserStatus' }
+
+    CategoryResponse:
+      type: object
+      required: [id, name, slug, sortOrder]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string, nullable: true }
+        sortOrder: { type: integer }
+
+    AdminCategoryResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CategoryResponse' }
+        - type: object
+          properties:
+            isActive: { type: boolean }
+
+    CategoryUpsertRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        slug: { type: string, minLength: 1, maxLength: 180 }
+        description: { type: string, nullable: true }
+        sortOrder: { type: integer, default: 0 }
+        isActive: { type: boolean, default: true }
+
+    TemplateSummary:
+      type: object
+      required: [id, categoryId, name, slug, isPremium]
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string, nullable: true }
+        thumbnailUrl: { type: string, nullable: true }
+        isPremium: { type: boolean }
+
+    TemplateDetail:
+      allOf:
+        - { $ref: '#/components/schemas/TemplateSummary' }
+        - type: object
+          properties:
+            htmlContent: { type: string }
+            cssContent: { type: string, nullable: true }
+            editorState: { type: object, nullable: true, additionalProperties: true }
+
+    AdminTemplateResponse:
+      allOf:
+        - { $ref: '#/components/schemas/TemplateDetail' }
+        - type: object
+          properties:
+            isActive: { type: boolean }
+
+    TemplateUpsertRequest:
+      type: object
+      required: [categoryId, name, slug, htmlContent]
+      properties:
+        categoryId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        slug: { type: string, minLength: 1, maxLength: 180 }
+        description: { type: string, nullable: true }
+        thumbnailUrl: { type: string, nullable: true }
+        htmlContent: { type: string }
+        cssContent: { type: string, nullable: true }
+        editorState: { type: object, nullable: true, additionalProperties: true }
+        isPremium: { type: boolean, default: false }
+        isActive: { type: boolean, default: true }
+
+    CreateWebsiteFromTemplateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+
+    CreateBlankWebsiteRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+
+    UpdateWebsiteRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+
+    WebsiteSummary:
+      type: object
+      required: [id, name, slug, status, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        status: { $ref: '#/components/schemas/WebsiteStatus' }
+        publishedUrl: { type: string, format: uri, nullable: true }
+        updatedAt: { type: string, format: date-time }
+
+    EditorStateResponse:
+      type: object
+      required: [websiteId, htmlContent, versionNumber, updatedAt]
+      properties:
+        websiteId: { type: string, format: uuid }
+        htmlContent: { type: string }
+        cssContent: { type: string, nullable: true }
+        editorState: { type: object, nullable: true, additionalProperties: true }
+        versionNumber: { type: integer }
+        updatedAt: { type: string, format: date-time }
+        websiteStatus: { $ref: '#/components/schemas/WebsiteStatus', nullable: true }
+        publishedUrl: { type: string, format: uri, nullable: true }
+
+    SaveEditorStateRequest:
+      type: object
+      required: [htmlContent]
+      properties:
+        htmlContent: { type: string }
+        cssContent: { type: string, nullable: true }
+        editorState: { type: object, nullable: true, additionalProperties: true }
+
+    SaveEditorStateResponse:
+      type: object
+      required: [websiteId, versionNumber, savedAt]
+      properties:
+        websiteId: { type: string, format: uuid }
+        versionNumber: { type: integer }
+        savedAt: { type: string, format: date-time }
+
+    PreviewResponse:
+      type: object
+      required: [htmlContent]
+      properties:
+        htmlContent: { type: string }
+        cssContent: { type: string, nullable: true }
+
+    BillingStatusResponse:
+      type: object
+      required: [status, canPublish]
+      properties:
+        status: { $ref: '#/components/schemas/SubscriptionStatus' }
+        planCode: { type: string, nullable: true }
+        canPublish: { type: boolean }
+        currentPeriodEnd: { type: string, format: date-time, nullable: true }
+
+    CheckoutRequest:
+      type: object
+      required: [planCode]
+      properties:
+        planCode: { type: string }
+
+    CheckoutResponse:
+      type: object
+      required: [checkoutUrl]
+      properties:
+        checkoutUrl: { type: string }
+
+    PortalResponse:
+      type: object
+      required: [portalUrl]
+      properties:
+        portalUrl: { type: string }
+
+    PublishResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [SUCCESS, FAILED] }
+        publishedUrl: { type: string, format: uri, nullable: true }
+        message: { type: string, nullable: true }
+
+    PublishStatusResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/PublishLogStatus' }
+        publishedUrl: { type: string, format: uri, nullable: true }
+        lastPublishedAt: { type: string, format: date-time, nullable: true }
+
+    PublishLogResponse:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/PublishLogStatus' }
+        publishedUrl: { type: string, format: uri, nullable: true }
+        message: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    AdminUserResponse:
+      type: object
+      required: [id, email, role, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/UserRole' }
+        status: { $ref: '#/components/schemas/UserStatus' }
+        subscriptionStatus: { $ref: '#/components/schemas/SubscriptionStatus', nullable: true }
+        planCode: { type: string, pattern: '^[A-Z_]{2,20}$', nullable: true }
+        websiteCount:
+          type: integer
+          format: int64
+          description: Number of websites created by this user
+        createdAt: { type: string, format: date-time }
+
+    AdminMetricsResponse:
+      type: object
+      required: [totalUsers, totalWebsites, totalActiveSubscriptions]
+      properties:
+        totalUsers: { type: integer, format: int64 }
+        totalWebsites: { type: integer, format: int64 }
+        totalActiveSubscriptions: { type: integer, format: int64 }
+
+    AdminBillingOverviewResponse:
+      type: object
+      properties:
+        mrr:
+          type: number
+          format: double
+          description: Monthly Recurring Revenue in USD
+        arr:
+          type: number
+          format: double
+          description: Annual Recurring Revenue in USD
+        totalActiveSubscriptions:
+          type: integer
+          description: Total number of active subscriptions
+        planDistribution:
+          type: object
+          properties:
+            free:
+              type: integer
+              description: Number of users on the free plan
+            pro:
+              type: integer
+              description: Number of users on the pro plan
+            enterprise:
+              type: integer
+              description: Number of users on the enterprise plan
+
+    AdminInvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Invoice ID
+        userId:
+          type: string
+          format: uuid
+          description: User UUID
+        userEmail:
+          type: string
+          format: email
+          description: User email address
+        amount:
+          type: number
+          format: double
+          description: Invoice amount in USD
+        currency:
+          type: string
+          description: Currency code (e.g. usd)
+        status:
+          type: string
+          description: Invoice status (paid, open, void, etc.)
+        createdAt:
+          type: string
+          format: date-time
+          description: Invoice creation timestamp
+
+    AdminInvoicePageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminInvoiceResponse'
+        totalElements:
+          type: integer
+          description: Total number of invoices
+        page:
+          type: integer
+          description: Current page number
+        size:
+          type: integer
+          description: Page size
+
+    AdminSubscriptionResponse:
+      type: object
+      required: [userId, planCode, status, createdAt]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        userEmail:
+          type: string
+          format: email
+        planCode:
+          type: string
+        status:
+          type: string
+          enum: [TRIALING, ACTIVE, PAST_DUE, CANCELED]
+        createdAt:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdminSubscriptionPageResponse:
+      type: object
+      required: [content, totalElements, page, size]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/AdminSubscriptionResponse' }
+        totalElements:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        size:
+          type: integer
+
+    AdminWebsiteStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [DRAFT, ARCHIVED]
+
+    UpdateUserStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED]
+
+    AdminWebsiteResponse:
+      type: object
+      required: [id, ownerEmail, name, status, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        ownerEmail: { type: string, format: email }
+        name: { type: string }
+        status: { $ref: '#/components/schemas/WebsiteStatus' }
+        publishedUrl: { type: string, format: uri, nullable: true }
+        updatedAt: { type: string, format: date-time }
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: array
+              items: { $ref: '#/components/schemas/ApiErrorDetail' }
+
+    ApiErrorDetail:
+      type: object
+      properties:
+        field: { type: string }
+        message: { type: string }

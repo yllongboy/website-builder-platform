@@ -1,0 +1,148 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { of } from 'rxjs';
+import { EditorApiService } from '../data-access/editor-api.service';
+import { EditorPage } from './editor.page';
+
+describe('EditorPage', () => {
+  let fixture: ComponentFixture<EditorPage>;
+  let component: EditorPage;
+  let editorApiService: jasmine.SpyObj<EditorApiService>;
+
+  beforeEach(async () => {
+    editorApiService = jasmine.createSpyObj<EditorApiService>('EditorApiService', [
+      'loadEditorState',
+      'saveEditorState',
+    ]);
+
+    editorApiService.loadEditorState.and.returnValue(
+      of({
+        websiteId: 'website-1',
+        htmlContent: '',
+        cssContent: '',
+        editorState: null,
+        versionNumber: 1,
+        updatedAt: new Date().toISOString(),
+      }) as never
+    );
+
+    editorApiService.saveEditorState.and.returnValue(
+      of({
+        websiteId: 'website-1',
+        versionNumber: 1,
+        savedAt: new Date().toISOString(),
+      }) as never
+    );
+
+    await TestBed.configureTestingModule({
+      imports: [EditorPage],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ websiteId: 'website-1' }),
+            },
+          },
+        },
+        {
+          provide: Router,
+          useValue: jasmine.createSpyObj<Router>('Router', ['navigate']),
+        },
+        {
+          provide: EditorApiService,
+          useValue: editorApiService,
+        },
+      ],
+    })
+      .overrideComponent(EditorPage, {
+        set: {
+          imports: [],
+          template: '<div></div>',
+        },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(EditorPage);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('starts with isDirty set to false', () => {
+    expect(component.isDirty).toBeFalse();
+  });
+
+  it('onContentChange sets isDirty to true', () => {
+    component.onContentChange({ html: '<div>a</div>', css: '', editorState: null });
+
+    expect(component.isDirty).toBeTrue();
+  });
+
+  it('sets isDirty to false after successful save', () => {
+    component.onContentChange({ html: '<section>x</section>', css: '', editorState: null });
+
+    component.manualSave();
+
+    expect(component.isDirty).toBeFalse();
+  });
+
+  it('sets isSaving to false after successful save', () => {
+    component.onContentChange({ html: '<section>y</section>', css: '', editorState: null });
+
+    component.manualSave();
+
+    expect(component.isSaving).toBeFalse();
+  });
+
+  it('undo calls grapesEditor.UndoManager.undo', () => {
+    const undo = jasmine.createSpy('undo');
+    (component as any).grapesEditor = {
+      UndoManager: {
+        undo,
+        hasUndo: () => false,
+        hasRedo: () => false,
+      },
+    };
+
+    component.undo();
+
+    expect(undo).toHaveBeenCalled();
+  });
+
+  it('redo calls grapesEditor.UndoManager.redo', () => {
+    const redo = jasmine.createSpy('redo');
+    (component as any).grapesEditor = {
+      UndoManager: {
+        redo,
+        hasUndo: () => false,
+        hasRedo: () => false,
+      },
+    };
+
+    component.redo();
+
+    expect(redo).toHaveBeenCalled();
+  });
+
+  it('beforeunload prevents default when dirty', () => {
+    component.isDirty = true;
+    const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as BeforeUnloadEvent;
+
+    component.onBeforeUnload(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+  });
+
+  it('beforeunload does not prevent default when not dirty', () => {
+    component.isDirty = false;
+    const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as BeforeUnloadEvent;
+
+    component.onBeforeUnload(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+  });
+
+  afterEach(() => {
+    component.ngOnDestroy();
+  });
+});

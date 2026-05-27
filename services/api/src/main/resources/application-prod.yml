@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+# Required environment variables for this profile:
+# APP_JWT_SECRET - JWT signing secret (minimum 32 characters, use a cryptographically random value)
+# APP_JWT_EXPIRATION_MS - JWT expiration in milliseconds (default: 86400000 = 24h, optional)
+# APP_CORS_ALLOWED_ORIGINS - Comma-separated list of allowed CORS origins (e.g., https://app.example.com)
+
+cloudflare:
+  r2:
+    # CLOUDFLARE_R2_ACCOUNT_ID - Cloudflare account ID used to build the R2 endpoint
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID}
+    # CLOUDFLARE_R2_ACCESS_KEY_ID - R2 access key ID for S3-compatible API authentication
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID}
+    # CLOUDFLARE_R2_ACCESS_KEY_SECRET - R2 secret access key for S3-compatible API authentication
+    access-key-secret: ${CLOUDFLARE_R2_ACCESS_KEY_SECRET}
+    # CLOUDFLARE_R2_BUCKET_NAME - Target bucket name for published website assets
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME}
+    # CLOUDFLARE_R2_PUBLIC_URL_BASE - Public base URL for published website assets
+    public-url-base: ${CLOUDFLARE_R2_PUBLIC_URL_BASE}

@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "libs/*"
+allowBuilds:
+  '@parcel/watcher': false
+  esbuild: false
+  nx: false

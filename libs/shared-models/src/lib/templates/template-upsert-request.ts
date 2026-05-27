@@ -1,0 +1,1 @@
+export interface TemplateUpsertRequest { categoryId: string; name: string; slug: string; description?: string | null; thumbnailUrl?: string | null; htmlContent: string; cssContent?: string | null; editorState?: Record<string, unknown> | null; isPremium?: boolean; isActive?: boolean; }

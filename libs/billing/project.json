@@ -1,0 +1,23 @@
+{
+  "name": "billing",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/billing/src",
+  "prefix": "platform",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/billing",
+        "main": "libs/billing/src/index.ts",
+        "tsConfig": "libs/billing/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": { "lintFilePatterns": ["libs/billing/**/*.ts"] }
+    }
+  }
+}
