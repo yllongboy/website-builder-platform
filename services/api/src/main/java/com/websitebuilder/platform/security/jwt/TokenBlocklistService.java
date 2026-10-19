@@ -1,22 +1,30 @@
 package com.websitebuilder.platform.security.jwt;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TokenBlocklistService {
 
-    private final ConcurrentMap<String, Instant> revokedTokensByJti = new ConcurrentHashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(TokenBlocklistService.class);
 
+    private final RevokedTokenRepository revokedTokenRepository;
+
+    public TokenBlocklistService(RevokedTokenRepository revokedTokenRepository) {
+        this.revokedTokenRepository = revokedTokenRepository;
+    }
+
+    @Transactional
     public void revoke(String jti, Instant expiresAt) {
         if (jti == null || jti.isBlank() || expiresAt == null) {
             return;
         }
-        revokedTokensByJti.put(jti, expiresAt);
+        revokedTokenRepository.revoke(jti, expiresAt);
     }
 
     public boolean isRevoked(String jti) {
@@ -24,27 +32,18 @@ public class TokenBlocklistService {
             return true;
         }
 
-        Instant expiresAt = revokedTokensByJti.get(jti);
-        if (expiresAt == null) {
-            return false;
+        try {
+            return revokedTokenRepository.existsByJtiAndExpiresAtAfter(jti, Instant.now());
+        } catch (DataAccessException exception) {
+            // Authentication must fail closed when revocation state cannot be checked.
+            logger.error("Unable to check JWT revocation state; rejecting token", exception);
+            return true;
         }
-
-        if (expiresAt.isBefore(Instant.now())) {
-            revokedTokensByJti.remove(jti, expiresAt);
-            return false;
-        }
-
-        return true;
     }
 
     @Scheduled(fixedRate = 300_000)
+    @Transactional
     public void evictExpired() {
-        Instant now = Instant.now();
-        revokedTokensByJti.entrySet().removeIf(entry -> isExpired(entry, now));
-    }
-
-    private boolean isExpired(Map.Entry<String, Instant> entry, Instant now) {
-        Instant expiresAt = entry.getValue();
-        return expiresAt == null || expiresAt.isBefore(now);
+        revokedTokenRepository.deleteByExpiresAtBefore(Instant.now());
     }
 }
