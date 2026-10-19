@@ -6,11 +6,8 @@ import com.websitebuilder.platform.auth.dto.RegisterRequest;
 import com.websitebuilder.platform.auth.service.AuthService;
 import com.websitebuilder.platform.common.dto.SuccessResponse;
 import com.websitebuilder.platform.common.exceptions.ApiException;
-import com.websitebuilder.platform.security.jwt.JwtService;
-import com.websitebuilder.platform.security.jwt.TokenBlocklistService;
 import com.websitebuilder.platform.users.dto.UserDetail;
 import com.websitebuilder.platform.users.entity.UserEntity;
-import java.time.Instant;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,24 +20,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtService jwtService;
-    private final TokenBlocklistService tokenBlocklistService;
 
-    public AuthController(
-            AuthService authService,
-            JwtService jwtService,
-            TokenBlocklistService tokenBlocklistService
-    ) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.jwtService = jwtService;
-        this.tokenBlocklistService = tokenBlocklistService;
     }
 
     @PostMapping("/register")
@@ -67,22 +55,7 @@ public class AuthController {
     public ResponseEntity<SuccessResponse> logout(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader
     ) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
-        }
-
-        String token = authorizationHeader.substring(7).trim();
-        if (token.isBlank() || !jwtService.validateToken(token)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
-        }
-
-        String jti = jwtService.extractJti(token);
-        Instant expiry = jwtService.extractExpiry(token);
-        if (jti == null || expiry == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
-        }
-
-        tokenBlocklistService.revoke(jti, expiry);
+        authService.logout(authorizationHeader);
         return ResponseEntity.ok(new SuccessResponse(true));
     }
 }
