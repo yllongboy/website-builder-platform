@@ -5,9 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.websitebuilder.platform.auth.dto.AuthResponse;
 import com.websitebuilder.platform.auth.dto.LoginRequest;
+import com.websitebuilder.platform.auth.dto.RegisterRequest;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.security.jwt.JwtService;
 import com.websitebuilder.platform.security.jwt.TokenBlocklistService;
@@ -43,9 +49,12 @@ class AuthServiceTest {
     @Mock
     private TokenBlocklistService tokenBlocklistService;
 
+    @Mock
+    private ActivityEventService activityEventService;
+
     @Test
     void login_rejectsNonActiveUser_withGenericError() {
-        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService);
+        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
         LoginRequest request = new LoginRequest("suspended@example.com", "password123");
         UserEntity suspendedUser = testUser(
                 UUID.fromString("10101010-1010-1010-1010-101010101010"),
@@ -63,7 +72,7 @@ class AuthServiceTest {
 
     @Test
     void login_rejectsDeletedUser_withGenericError() {
-        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService);
+        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
         LoginRequest request = new LoginRequest("deleted@example.com", "password123");
         UserEntity deletedUser = testUser(
                 UUID.fromString("20202020-2020-2020-2020-202020202020"),
@@ -81,7 +90,7 @@ class AuthServiceTest {
 
     @Test
     void login_succeedsForActiveUser() {
-        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService);
+        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
         LoginRequest request = new LoginRequest("active@example.com", "password123");
         UUID userId = UUID.fromString("30303030-3030-3030-3030-303030303030");
         UserEntity activeUser = testUser(userId, "active@example.com", com.websitebuilder.platform.users.entity.UserStatus.ACTIVE);
@@ -96,6 +105,35 @@ class AuthServiceTest {
 
         assertEquals("jwt-token", response.accessToken());
         assertEquals(summary, response.user());
+    }
+
+    @Test
+    void register_recordsSignupOnlyAfterUserIsSaved() {
+        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
+        RegisterRequest request = new RegisterRequest("new@example.com", "password123");
+        UserSummary summary = new UserSummary(UUID.randomUUID(), request.email(), UserRole.USER);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded-password");
+        when(jwtService.generateToken(any(), eq("USER"))).thenReturn("jwt-token");
+        when(userMapper.toUserSummary(any(UserEntity.class))).thenReturn(summary);
+
+        AuthResponse response = authService.register(request);
+
+        assertEquals("jwt-token", response.accessToken());
+        verify(userRepository).save(any(UserEntity.class));
+        verify(activityEventService).record(ActivityEventType.SIGNUP, "User signed up", request.email());
+    }
+
+    @Test
+    void register_rejectsDuplicateEmail_withoutRecordingSignup() {
+        AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
+        RegisterRequest request = new RegisterRequest("existing@example.com", "password123");
+        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+
+        assertThrows(ApiException.class, () -> authService.register(request));
+
+        verify(activityEventService, never()).record(any(ActivityEventType.class), anyString(), anyString());
     }
 
     private UserEntity testUser(UUID id, String email, com.websitebuilder.platform.users.entity.UserStatus status) {

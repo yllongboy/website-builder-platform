@@ -500,6 +500,29 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /admin/activity:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get recent admin activity
+      description: >-
+        Requires ROLE_ADMIN. Returns at most the 20 most recent activity records,
+        sorted by timestamp descending. Records with equal timestamps are ordered
+        by event ID descending as a deterministic internal tie-breaker; the event
+        ID is not included in the response. Timestamps are UTC.
+      responses:
+        '200':
+          description: Latest activity records
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 20
+                items: { $ref: '#/components/schemas/AdminActivityRecord' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /admin/categories:
     get:
       tags: [Admin]
@@ -1105,6 +1128,25 @@ components:
         totalUsers: { type: integer, format: int64 }
         totalWebsites: { type: integer, format: int64 }
         totalActiveSubscriptions: { type: integer, format: int64 }
+
+    AdminActivityRecord:
+      type: object
+      required: [type, description, userName, timestamp]
+      properties:
+        type:
+          type: string
+          enum: [SIGNUP, WEBSITE_PUBLISHED, SUBSCRIPTION_CREATED]
+          description: Activity event type
+        description:
+          type: string
+          description: Human-readable activity description
+        userName:
+          type: string
+          description: Email snapshot of the user associated with the activity
+        timestamp:
+          type: string
+          format: date-time
+          description: Activity time in UTC, serialized with a Z UTC offset
 
     AdminBillingOverviewResponse:
       type: object

@@ -11,6 +11,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -70,6 +72,9 @@ class WebsiteServiceRepublishTest {
     @Mock
     private PublishLogRepository publishLogRepository;
 
+    @Mock
+    private ActivityEventService activityEventService;
+
     @Test
     @DisplayName("republish published owner updates lastPublishedAt and keeps publishedUrl")
     void republish_success() {
@@ -98,6 +103,8 @@ class WebsiteServiceRepublishTest {
         assertTrue(website.lastPublishedAt().isAfter(previousPublishedAt));
         verify(r2UploadService).uploadSiteFiles(eq(expectedUserSlug(owner)), eq("test-site"), anyString(), anyString());
         verify(publishLogService).logSuccess(log, existingPublishedUrl);
+        verify(activityEventService).record(
+                ActivityEventType.WEBSITE_PUBLISHED, "Website published: " + website.name(), owner.email());
     }
 
     @Test
@@ -114,6 +121,7 @@ class WebsiteServiceRepublishTest {
 
         assertEquals("WEBSITE_ACCESS_DENIED", exception.code());
         verify(r2UploadService, never()).uploadSiteFiles(anyString(), anyString(), anyString(), anyString());
+        verify(activityEventService, never()).record(any(), anyString(), anyString());
     }
 
     @Test
@@ -171,6 +179,7 @@ class WebsiteServiceRepublishTest {
 
         assertEquals("REPUBLISH_FAILED", exception.code());
         verify(publishLogService).logFailed(log, "Failed to republish website");
+        verify(activityEventService, never()).record(any(), anyString(), anyString());
     }
 
     private WebsiteService newWebsiteService() {
@@ -190,7 +199,8 @@ class WebsiteServiceRepublishTest {
                         "secret",
                         "bucket",
                         "https://pub.sites.example.test"
-                )
+                ),
+                activityEventService
         );
     }
 

@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -64,6 +67,9 @@ class WebsiteServiceUnpublishTest {
     @Mock
     private PublishLogRepository publishLogRepository;
 
+    @Mock
+    private ActivityEventService activityEventService;
+
     @Test
     @DisplayName("unpublish published owner resets publish fields and logs event")
     void unpublish_success() {
@@ -83,6 +89,7 @@ class WebsiteServiceUnpublishTest {
         verify(r2UploadService).deleteSiteFiles(anyString(), anyString());
         verify(websiteRepository).save(website);
         verify(publishLogService).logUnpublished(website);
+        verify(activityEventService, never()).record(any(ActivityEventType.class), anyString(), anyString());
     }
 
     @Test
@@ -172,7 +179,8 @@ class WebsiteServiceUnpublishTest {
                         "secret",
                         "bucket",
                         "https://pub.sites.example.test"
-                )
+                ),
+                activityEventService
         );
     }
 

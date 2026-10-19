@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -43,6 +44,9 @@ class WebsiteServiceAdminTest {
     @Mock private R2UploadService r2UploadService;
     @Mock private PublishLogService publishLogService;
     @Mock private PublishLogRepository publishLogRepository;
+
+    @Mock
+    private ActivityEventService activityEventService;
 
     @Test
     void adminUpdateStatus_toArchived_succeeds() {
@@ -123,7 +127,7 @@ class WebsiteServiceAdminTest {
         return new WebsiteService(websiteRepository, websiteVersionRepository, templateRepository,
                 websiteMapper, htmlSanitizer, billingService, r2UploadService, publishLogService,
                 publishLogRepository, new R2Properties("account", "key", "secret", "bucket",
-                "https://pub.sites.example.test"));
+                "https://pub.sites.example.test"), activityEventService);
     }
 
     private static UserEntity testUser() {

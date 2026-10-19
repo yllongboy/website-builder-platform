@@ -2,6 +2,8 @@ package com.websitebuilder.platform.websites.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.dto.SuccessResponse;
 import com.websitebuilder.platform.common.exceptions.ApiException;
@@ -54,6 +56,7 @@ public class WebsiteService {
     private final PublishLogService publishLogService;
     private final PublishLogRepository publishLogRepository;
     private final R2Properties r2Properties;
+    private final ActivityEventService activityEventService;
 
     public WebsiteService(
             WebsiteRepository websiteRepository,
@@ -65,7 +68,8 @@ public class WebsiteService {
             R2UploadService r2UploadService,
             PublishLogService publishLogService,
             PublishLogRepository publishLogRepository,
-            R2Properties r2Properties
+            R2Properties r2Properties,
+            ActivityEventService activityEventService
     ) {
         this.websiteRepository = websiteRepository;
         this.websiteVersionRepository = websiteVersionRepository;
@@ -77,6 +81,7 @@ public class WebsiteService {
         this.publishLogService = publishLogService;
         this.publishLogRepository = publishLogRepository;
         this.r2Properties = r2Properties;
+        this.activityEventService = activityEventService;
     }
 
     @PostConstruct
@@ -321,6 +326,7 @@ public class WebsiteService {
             websiteRepository.save(website);
 
             publishLogService.logSuccess(log, website.publishedUrl());
+            recordWebsitePublished(website, user);
             return new PublishResponse("SUCCESS", website.publishedUrl(), null);
         } catch (Exception ex) {
             publishLogService.logFailed(log, "R2 upload failed");
@@ -359,6 +365,7 @@ public class WebsiteService {
             websiteRepository.save(website);
 
             publishLogService.logSuccess(log, website.publishedUrl());
+            recordWebsitePublished(website, user);
             return new PublishResponse("SUCCESS", website.publishedUrl(), null);
         } catch (Exception ex) {
             publishLogService.logFailed(log, "Failed to republish website");
@@ -382,6 +389,14 @@ public class WebsiteService {
         r2UploadService.deleteSiteFiles(buildUserSlug(user), website.slug());
 
         publishLogService.logUnpublished(website);
+    }
+
+    private void recordWebsitePublished(WebsiteEntity website, UserEntity user) {
+        activityEventService.record(
+                ActivityEventType.WEBSITE_PUBLISHED,
+                "Website published: " + website.name(),
+                user.email()
+        );
     }
 
     @Transactional(readOnly = true)
