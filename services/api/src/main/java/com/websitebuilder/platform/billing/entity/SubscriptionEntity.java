@@ -41,6 +41,18 @@ public class SubscriptionEntity {
     @Column(name = "plan_code", nullable = false)
     private String planCode;
 
+    @Column(name = "recurring_amount_minor")
+    private Long recurringAmountMinor;
+
+    @Column(name = "recurring_currency", length = 3)
+    private String recurringCurrency;
+
+    @Column(name = "recurring_interval", length = 10)
+    private String recurringInterval;
+
+    @Column(name = "recurring_interval_count")
+    private Integer recurringIntervalCount;
+
     @Column(name = "current_period_end")
     private Instant currentPeriodEnd;
 
@@ -94,6 +106,10 @@ public class SubscriptionEntity {
     public String providerSubscriptionId() { return providerSubscriptionId; }
     public SubscriptionStatus status() { return status; }
     public String planCode() { return planCode; }
+    public Long recurringAmountMinor() { return recurringAmountMinor; }
+    public String recurringCurrency() { return recurringCurrency; }
+    public String recurringInterval() { return recurringInterval; }
+    public Integer recurringIntervalCount() { return recurringIntervalCount; }
     public Instant currentPeriodEnd() { return currentPeriodEnd; }
     public Boolean cancelAtPeriodEnd() { return cancelAtPeriodEnd; }
     public Instant createdAt() { return createdAt; }
@@ -113,6 +129,18 @@ public class SubscriptionEntity {
 
     public void setPlanCode(String planCode) {
         this.planCode = planCode;
+    }
+
+    public void setRecurringPriceSnapshot(
+            Long recurringAmountMinor,
+            String recurringCurrency,
+            String recurringInterval,
+            Integer recurringIntervalCount
+    ) {
+        this.recurringAmountMinor = recurringAmountMinor;
+        this.recurringCurrency = recurringCurrency;
+        this.recurringInterval = recurringInterval;
+        this.recurringIntervalCount = recurringIntervalCount;
     }
 
     public void setCurrentPeriodEnd(Instant currentPeriodEnd) {
