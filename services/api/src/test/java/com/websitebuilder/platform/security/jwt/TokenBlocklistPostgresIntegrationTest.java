@@ -20,7 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(
         properties = {
                 "APP_JWT_SECRET=01234567890123456789012345678901",
-                "app.cors.allowed-origins=http://localhost:4200"
+                "APP_CORS_ALLOWED_ORIGINS=http://localhost:4200"
         }
 )
 @Testcontainers
@@ -60,7 +60,7 @@ class TokenBlocklistPostgresIntegrationTest {
                         "spring.datasource.password=" + POSTGRES.getPassword(),
                         "spring.datasource.driver-class-name=" + POSTGRES.getDriverClassName(),
                         "APP_JWT_SECRET=01234567890123456789012345678901",
-                        "app.cors.allowed-origins=http://localhost:4200"
+                        "APP_CORS_ALLOWED_ORIGINS=http://localhost:4200"
                 )
                 .run()) {
             TokenBlocklistService restartedService = restartedApplication.getBean(TokenBlocklistService.class);

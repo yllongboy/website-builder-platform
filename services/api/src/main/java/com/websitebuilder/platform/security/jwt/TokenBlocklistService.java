@@ -41,7 +41,7 @@ public class TokenBlocklistService {
         }
     }
 
-    @Scheduled(fixedRate = 300_000)
+    @Scheduled(fixedRate = 300_000, initialDelay = 300_000)
     @Transactional
     public void evictExpired() {
         revokedTokenRepository.deleteByExpiresAtBefore(Instant.now());
