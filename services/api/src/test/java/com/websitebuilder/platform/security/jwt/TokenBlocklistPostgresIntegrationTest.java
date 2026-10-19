@@ -53,8 +53,9 @@ class TokenBlocklistPostgresIntegrationTest {
         tokenBlocklistService.revoke(jti, expiresAt);
 
         try (var restartedApplication = new SpringApplicationBuilder(WebsiteBuilderPlatformApplication.class)
-                .web(WebApplicationType.NONE)
+                .web(WebApplicationType.SERVLET)
                 .properties(
+                        "server.port=0",
                         "spring.datasource.url=" + POSTGRES.getJdbcUrl(),
                         "spring.datasource.username=" + POSTGRES.getUsername(),
                         "spring.datasource.password=" + POSTGRES.getPassword(),
