@@ -44,7 +44,7 @@ All variables below must be set on the server before starting the API. None have
 
 - [ ] Create the **Pro** product and recurring price in the Stripe Dashboard (live mode)
 - [ ] Register the production webhook endpoint: `https://api.example.com/api/billing/webhook`
-- [ ] Enable webhook events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+- [ ] Enable webhook events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
 - [ ] Copy the signing secret into `STRIPE_WEBHOOK_SECRET`
 
 ---

@@ -19,10 +19,13 @@ import com.websitebuilder.platform.users.entity.UserEntity;
 import com.websitebuilder.platform.users.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,6 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminBillingService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminBillingService.class);
+    private static final Set<String> STRIPE_ZERO_DECIMAL_CURRENCIES = Set.of(
+            "BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA", "PYG", "RWF",
+            "VND", "VUV", "XAF", "XOF", "XPF"
+    );
 
     private static final List<SubscriptionStatus> ACTIVE_STATUSES = List.of(
             SubscriptionStatus.ACTIVE,
@@ -77,19 +84,43 @@ public class AdminBillingService {
     @Transactional(readOnly = true)
     public AdminBillingOverviewResponse getOverview() {
         long totalActiveSubscriptions = subscriptionRepository.countByStatusIn(ACTIVE_STATUSES);
+        long activeCount = subscriptionRepository.countByStatus(SubscriptionStatus.ACTIVE);
+        long trialingCount = subscriptionRepository.countByStatus(SubscriptionStatus.TRIALING);
+        long pastDueCount = subscriptionRepository.countByStatus(SubscriptionStatus.PAST_DUE);
 
-        Map<String, Long> planDistribution = subscriptionRepository.findByStatusIn(ACTIVE_STATUSES)
-                .stream()
+        List<SubscriptionEntity> activeSubscriptions = subscriptionRepository.findByStatusIn(List.of(SubscriptionStatus.ACTIVE));
+        Map<String, Long> planDistribution = subscriptionRepository.findByStatusIn(ACTIVE_STATUSES).stream()
                 .filter(subscription -> subscription.planCode() != null && !subscription.planCode().isBlank())
                 .collect(Collectors.groupingBy(
                         subscription -> subscription.planCode().toLowerCase(Locale.ROOT),
                         Collectors.counting()
                 ));
 
+        Map<String, BigDecimal> recurringRevenueByCurrency = activeSubscriptions.stream()
+                .filter(subscription -> subscription.recurringAmountMinor() != null
+                        && subscription.recurringCurrency() != null
+                        && subscription.recurringInterval() != null
+                        && subscription.recurringIntervalCount() != null
+                        && subscription.recurringIntervalCount() > 0
+                        && toMajorCurrencyUnit(subscription.recurringAmountMinor(), subscription.recurringCurrency()) != null
+                        && isSupportedRecurringInterval(subscription.recurringInterval()))
+                .collect(Collectors.groupingBy(
+                        subscription -> subscription.recurringCurrency().toUpperCase(Locale.ROOT),
+                        Collectors.mapping(this::monthlyRecurringAmount,
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
+                ));
+        recurringRevenueByCurrency.replaceAll((currency, amount) -> amount.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal usdMrr = recurringRevenueByCurrency.get("USD");
+
         return new AdminBillingOverviewResponse(
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
+                usdMrr == null ? BigDecimal.ZERO : usdMrr,
+                usdMrr,
+                usdMrr == null ? BigDecimal.ZERO : usdMrr.multiply(BigDecimal.valueOf(12)),
                 totalActiveSubscriptions,
+                activeCount,
+                trialingCount,
+                pastDueCount,
+                recurringRevenueByCurrency,
                 planDistribution
         );
     }
@@ -107,14 +138,65 @@ public class AdminBillingService {
                 .map(subscription -> new AdminSubscriptionResponse(
                         subscription.user().id(),
                         subscription.user().email(),
+                        subscription.user().email(),
+                        subscription.planCode(),
                         subscription.planCode(),
                         subscription.status(),
                         subscription.createdAt(),
-                        subscription.currentPeriodEnd()
+                        subscription.currentPeriodEnd(),
+                        subscription.currentPeriodEnd(),
+                        toMajorCurrencyUnit(subscription.recurringAmountMinor(), subscription.recurringCurrency()),
+                        subscription.recurringCurrency() == null ? null : subscription.recurringCurrency().toUpperCase(Locale.ROOT)
                 ))
                 .toList();
 
         return new AdminSubscriptionPageResponse(content, subscriptions.getTotalElements(), safePage, safeSize);
+    }
+
+    private BigDecimal monthlyRecurringAmount(SubscriptionEntity subscription) {
+        BigDecimal periodAmount = toMajorCurrencyUnit(
+                subscription.recurringAmountMinor(), subscription.recurringCurrency());
+        if (periodAmount == null) {
+            return BigDecimal.ZERO;
+        }
+
+        int intervalCount = subscription.recurringIntervalCount();
+        BigDecimal divisor = switch (subscription.recurringInterval().toLowerCase(Locale.ROOT)) {
+            case "month" -> BigDecimal.valueOf(intervalCount);
+            case "year" -> BigDecimal.valueOf(12L * intervalCount);
+            case "week" -> BigDecimal.valueOf(12L * intervalCount).divide(BigDecimal.valueOf(52), MathContext.DECIMAL128);
+            case "day" -> BigDecimal.valueOf(12L * intervalCount).divide(BigDecimal.valueOf(365), MathContext.DECIMAL128);
+            default -> BigDecimal.ZERO;
+        };
+        if (divisor.signum() == 0) {
+            return BigDecimal.ZERO;
+        }
+        return periodAmount.divide(divisor, MathContext.DECIMAL128);
+    }
+
+    private boolean isSupportedRecurringInterval(String interval) {
+        return switch (interval.toLowerCase(Locale.ROOT)) {
+            case "month", "year", "week", "day" -> true;
+            default -> false;
+        };
+    }
+
+    private BigDecimal toMajorCurrencyUnit(Long amountMinor, String currencyCode) {
+        if (amountMinor == null || currencyCode == null || currencyCode.isBlank()) {
+            return null;
+        }
+        try {
+            String normalizedCurrency = currencyCode.toUpperCase(Locale.ROOT);
+            if (java.util.Currency.getInstance(normalizedCurrency).getDefaultFractionDigits() < 0) {
+                return null;
+            }
+            // Stripe uses zero minor-unit digits only for its documented zero-decimal set.
+            // ISK and UGX are exceptions: Stripe retains two-decimal API amounts for backwards compatibility.
+            int fractionDigits = STRIPE_ZERO_DECIMAL_CURRENCIES.contains(normalizedCurrency) ? 0 : 2;
+            return BigDecimal.valueOf(amountMinor, fractionDigits);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     @Transactional(readOnly = true)

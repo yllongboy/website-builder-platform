@@ -7,8 +7,10 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.Invoice;
+import com.stripe.model.Price;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionItem;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.billingportal.SessionCreateParams;
@@ -176,6 +178,7 @@ public class BillingService {
         switch (event.getType()) {
             case "checkout.session.completed" -> handleCheckoutSessionCompleted(event);
             case "invoice.paid" -> handleInvoicePaid(event);
+            case "customer.subscription.created" -> handleSubscriptionUpdated(event);
             case "customer.subscription.updated" -> handleSubscriptionUpdated(event);
             case "customer.subscription.deleted" -> handleSubscriptionDeleted(event);
             default -> {
@@ -231,6 +234,29 @@ public class BillingService {
         Optional<SubscriptionEntity> existingSubscription = subscriptionRepository
                 .findFirstByUserIdOrderByCreatedAtDesc(user.id());
         String providerSubscriptionId = session.getSubscription();
+        if (providerSubscriptionId == null || providerSubscriptionId.isBlank()) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Checkout session is missing its Stripe subscription ID");
+        }
+        if (stripeSecretKey == null || stripeSecretKey.isBlank()) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Stripe subscription status cannot be verified");
+        }
+
+        Subscription stripeSubscription = retrieveStripeSubscription(providerSubscriptionId);
+        if (stripeSubscription == null) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Stripe subscription status cannot be verified");
+        }
+        com.websitebuilder.platform.billing.entity.SubscriptionStatus verifiedStatus =
+                mapProviderStatus(stripeSubscription.getStatus());
+        if (verifiedStatus == com.websitebuilder.platform.billing.entity.SubscriptionStatus.NONE) {
+            throw new ApiException("STRIPE_SUBSCRIPTION_SYNC_FAILED", "Stripe returned an unknown subscription status");
+        }
+
         boolean createdProviderSubscription = providerSubscriptionId != null
                 && !providerSubscriptionId.isBlank()
                 && existingSubscription
@@ -253,9 +279,11 @@ public class BillingService {
 
         subscription.setProviderCustomerId(session.getCustomer());
         subscription.setProviderSubscriptionId(providerSubscriptionId);
-        subscription.setStatus(com.websitebuilder.platform.billing.entity.SubscriptionStatus.ACTIVE);
+        subscription.setStatus(verifiedStatus);
         subscription.setPlanCode(planCode);
         subscription.setCancelAtPeriodEnd(false);
+        subscription.setCurrentPeriodEnd(epochSecondsToInstant(stripeSubscription.getCurrentPeriodEnd()));
+        syncRecurringPriceSnapshot(subscription, stripeSubscription);
         subscriptionRepository.save(subscription);
 
         if (createdProviderSubscription) {
@@ -275,8 +303,59 @@ public class BillingService {
                     subscription.setStatus(mapProviderStatus(stripeSubscription.getStatus()));
                     subscription.setCurrentPeriodEnd(epochSecondsToInstant(stripeSubscription.getCurrentPeriodEnd()));
                     subscription.setCancelAtPeriodEnd(Boolean.TRUE.equals(stripeSubscription.getCancelAtPeriodEnd()));
+                    syncRecurringPriceSnapshot(subscription, stripeSubscription);
                     subscriptionRepository.save(subscription);
                 });
+    }
+
+    private Subscription retrieveStripeSubscription(String subscriptionId) {
+        try {
+            // Checkout completion events contain the subscription ID, not its price details.
+            // Retrieve it here so the initial local snapshot does not depend on webhook ordering.
+            return Subscription.retrieve(subscriptionId);
+        } catch (StripeException ex) {
+            throw new ApiException("STRIPE_SUBSCRIPTION_SYNC_FAILED", "Failed to retrieve Stripe subscription");
+        }
+    }
+
+    private void syncRecurringPriceSnapshot(SubscriptionEntity localSubscription, Subscription stripeSubscription) {
+        var items = stripeSubscription.getItems() == null ? null : stripeSubscription.getItems().getData();
+        if (items == null || items.size() != 1) {
+            // This product currently sells one recurring item. Avoid reporting an incomplete or
+            // misleading MRR snapshot if Stripe returns a multi-item or empty subscription.
+            localSubscription.setRecurringPriceSnapshot(null, null, null, null);
+            return;
+        }
+
+        SubscriptionItem item = items.get(0);
+        Price price = item == null ? null : item.getPrice();
+        Price.Recurring recurring = price == null ? null : price.getRecurring();
+        Long unitAmount = price == null ? null : price.getUnitAmount();
+        String currency = price == null ? null : price.getCurrency();
+        String interval = recurring == null ? null : recurring.getInterval();
+        Long intervalCount = recurring == null ? null : recurring.getIntervalCount();
+        Long quantity = item == null ? null : item.getQuantity();
+
+        if (unitAmount == null || unitAmount < 0 || quantity == null || quantity < 1
+                || currency == null || !currency.matches("[A-Za-z]{3}")
+                || interval == null || !java.util.Set.of("day", "week", "month", "year").contains(interval)
+                || intervalCount == null || intervalCount < 1) {
+            localSubscription.setRecurringPriceSnapshot(null, null, null, null);
+            return;
+        }
+
+        try {
+            long amountForPeriod = Math.multiplyExact(unitAmount, quantity);
+            localSubscription.setRecurringPriceSnapshot(
+                    amountForPeriod,
+                    currency.toLowerCase(java.util.Locale.ROOT),
+                    interval,
+                    Math.toIntExact(intervalCount)
+            );
+        } catch (ArithmeticException ex) {
+            // An out-of-range amount cannot be represented by the local schema; leave it unknown.
+            localSubscription.setRecurringPriceSnapshot(null, null, null, null);
+        }
     }
 
     private void handleSubscriptionDeleted(Event event) {

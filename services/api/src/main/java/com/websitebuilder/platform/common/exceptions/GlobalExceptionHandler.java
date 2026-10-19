@@ -33,6 +33,7 @@ public class GlobalExceptionHandler {
             case "ADMIN_METRICS_PERIOD_INVALID" -> HttpStatus.BAD_REQUEST;
             case "BILLING_CHECKOUT_FAILED" -> HttpStatus.BAD_GATEWAY;
             case "BILLING_PORTAL_FAILED" -> HttpStatus.BAD_GATEWAY;
+            case "STRIPE_SUBSCRIPTION_SYNC_FAILED" -> HttpStatus.BAD_GATEWAY;
             case "STRIPE_EVENT_INVALID" -> HttpStatus.BAD_REQUEST;
             case "WEBSITE_STATUS_INVALID" -> HttpStatus.BAD_REQUEST;
             case "USER_STATUS_INVALID" -> HttpStatus.BAD_REQUEST;

@@ -757,7 +757,7 @@ paths:
   /admin/billing/overview:
     get:
       summary: Get admin billing overview
-      description: Returns MRR, ARR, total active subscriptions, and plan distribution counts.
+      description: Returns recurring revenue and subscription counts. MRR/ARR are derived from stored recurring subscription prices, not paid invoices; amounts are grouped by currency.
       tags:
         - Admin Billing
       security:
@@ -813,6 +813,31 @@ paths:
     get:
       tags: [Admin]
       summary: List all subscriptions (paginated)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0, minimum: 0, maximum: 999 }
+          description: Zero-based page number
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+          description: Page size (max 100)
+      responses:
+        '200':
+          description: Paginated subscription list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminSubscriptionPageResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/subscriptions:
+    get:
+      tags: [Admin]
+      summary: List admin subscriptions (paginated)
+      description: Returns subscription lifecycle and current recurring price data for administrators.
       security:
         - bearerAuth: []
       parameters:
@@ -1280,7 +1305,12 @@ components:
         mrr:
           type: number
           format: double
-          description: Monthly Recurring Revenue in USD
+          description: Legacy alias for monthlyRecurringRevenue in USD.
+        monthlyRecurringRevenue:
+          type: number
+          format: double
+          nullable: true
+          description: USD monthly recurring revenue; null when no USD recurring price data is available. Use monthlyRecurringRevenueByCurrency for other currencies.
         arr:
           type: number
           format: double
@@ -1288,6 +1318,21 @@ components:
         totalActiveSubscriptions:
           type: integer
           description: Total number of active subscriptions
+        activeCount:
+          type: integer
+          description: Number of ACTIVE subscriptions
+        trialingCount:
+          type: integer
+          description: Number of TRIALING subscriptions
+        pastDueCount:
+          type: integer
+          description: Number of PAST_DUE subscriptions
+        monthlyRecurringRevenueByCurrency:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Monthly recurring revenue grouped by ISO 4217 currency code to avoid combining currencies.
         planDistribution:
           type: object
           properties:
@@ -1357,6 +1402,12 @@ components:
         userEmail:
           type: string
           format: email
+        userName:
+          type: string
+          description: Email address used as the account display identifier.
+        plan:
+          type: string
+          description: Subscription plan code; never a Stripe price identifier.
         planCode:
           type: string
         status:
@@ -1369,6 +1420,20 @@ components:
           type: string
           format: date-time
           nullable: true
+        renewalDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC renewal date from the persisted subscription period end; null when unavailable or non-renewing.
+        amount:
+          type: number
+          format: double
+          nullable: true
+          description: Current recurring subscription price in major currency units; null until the price is synchronized.
+        currency:
+          type: string
+          nullable: true
+          description: ISO 4217 currency code for amount.
 
     AdminSubscriptionPageResponse:
       type: object
