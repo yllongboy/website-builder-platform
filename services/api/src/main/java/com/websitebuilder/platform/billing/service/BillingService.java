@@ -234,6 +234,29 @@ public class BillingService {
         Optional<SubscriptionEntity> existingSubscription = subscriptionRepository
                 .findFirstByUserIdOrderByCreatedAtDesc(user.id());
         String providerSubscriptionId = session.getSubscription();
+        if (providerSubscriptionId == null || providerSubscriptionId.isBlank()) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Checkout session is missing its Stripe subscription ID");
+        }
+        if (stripeSecretKey == null || stripeSecretKey.isBlank()) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Stripe subscription status cannot be verified");
+        }
+
+        Subscription stripeSubscription = retrieveStripeSubscription(providerSubscriptionId);
+        if (stripeSubscription == null) {
+            throw new ApiException(
+                    "STRIPE_SUBSCRIPTION_SYNC_FAILED",
+                    "Stripe subscription status cannot be verified");
+        }
+        com.websitebuilder.platform.billing.entity.SubscriptionStatus verifiedStatus =
+                mapProviderStatus(stripeSubscription.getStatus());
+        if (verifiedStatus == com.websitebuilder.platform.billing.entity.SubscriptionStatus.NONE) {
+            throw new ApiException("STRIPE_SUBSCRIPTION_SYNC_FAILED", "Stripe returned an unknown subscription status");
+        }
+
         boolean createdProviderSubscription = providerSubscriptionId != null
                 && !providerSubscriptionId.isBlank()
                 && existingSubscription
@@ -256,15 +279,11 @@ public class BillingService {
 
         subscription.setProviderCustomerId(session.getCustomer());
         subscription.setProviderSubscriptionId(providerSubscriptionId);
-        subscription.setStatus(com.websitebuilder.platform.billing.entity.SubscriptionStatus.ACTIVE);
+        subscription.setStatus(verifiedStatus);
         subscription.setPlanCode(planCode);
         subscription.setCancelAtPeriodEnd(false);
-        if (providerSubscriptionId != null && !providerSubscriptionId.isBlank()
-                && stripeSecretKey != null && !stripeSecretKey.isBlank()) {
-            Subscription stripeSubscription = retrieveStripeSubscription(providerSubscriptionId);
-            subscription.setCurrentPeriodEnd(epochSecondsToInstant(stripeSubscription.getCurrentPeriodEnd()));
-            syncRecurringPriceSnapshot(subscription, stripeSubscription);
-        }
+        subscription.setCurrentPeriodEnd(epochSecondsToInstant(stripeSubscription.getCurrentPeriodEnd()));
+        syncRecurringPriceSnapshot(subscription, stripeSubscription);
         subscriptionRepository.save(subscription);
 
         if (createdProviderSubscription) {
