@@ -1,6 +1,7 @@
 package com.websitebuilder.platform.websites.repository;
 
 import com.websitebuilder.platform.websites.entity.WebsiteEntity;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ public interface WebsiteRepository extends JpaRepository<WebsiteEntity, UUID> {
     List<Object[]> countGroupedByUserId();
 
     long countByUserId(UUID userId);
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(Instant startInclusive, Instant endExclusive);
 
     List<WebsiteEntity> findByUserId(UUID userId);
     Optional<WebsiteEntity> findByIdAndUserId(UUID id, UUID userId);

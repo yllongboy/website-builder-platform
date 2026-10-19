@@ -3,4 +3,8 @@ export interface AdminMetricsResponse {
   totalWebsites: number;
   totalActiveSubscriptions: number;
   monthlyRevenueCents: number;
+  userGrowthPercent: number | null;
+  websiteGrowthPercent: number | null;
+  subscriptionGrowthPercent: number | null;
+  revenueGrowthPercent: number | null;
 }

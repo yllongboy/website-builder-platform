@@ -43,7 +43,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
                 <p class="text-[13px] font-medium text-foreground-muted">Total Users</p>
                 <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">{{ metrics()?.totalUsers ?? '—' }}</p>
                 <p class="text-xs mt-3 flex items-center gap-1">
-                  <span class="font-medium text-foreground-muted">—</span>
+                  <span class="font-medium text-foreground-muted">{{ formatGrowth(metrics()?.userGrowthPercent) }}</span>
                   <span class="text-foreground-muted">vs last month</span>
                 </p>
               </div>
@@ -60,7 +60,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
                 <p class="text-[13px] font-medium text-foreground-muted">Active Subscriptions</p>
                 <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">{{ metrics()?.totalActiveSubscriptions ?? '—' }}</p>
                 <p class="text-xs mt-3 flex items-center gap-1">
-                  <span class="font-medium text-foreground-muted">—</span>
+                  <span class="font-medium text-foreground-muted">{{ formatGrowth(metrics()?.subscriptionGrowthPercent) }}</span>
                   <span class="text-foreground-muted">vs last month</span>
                 </p>
               </div>
@@ -77,7 +77,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
                 <p class="text-[13px] font-medium text-foreground-muted">Total Websites</p>
                 <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">{{ metrics()?.totalWebsites ?? '—' }}</p>
                 <p class="text-xs mt-3 flex items-center gap-1">
-                  <span class="font-medium text-foreground-muted">—</span>
+                  <span class="font-medium text-foreground-muted">{{ formatGrowth(metrics()?.websiteGrowthPercent) }}</span>
                   <span class="text-foreground-muted">vs last month</span>
                 </p>
               </div>
@@ -94,7 +94,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
                 <p class="text-[13px] font-medium text-foreground-muted">Monthly Revenue</p>
                 <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">{{ ((metrics()?.monthlyRevenueCents ?? 0) / 100) | currency:'USD':'symbol':'1.2-2' }}</p>
                 <p class="text-xs mt-3 flex items-center gap-1">
-                  <span class="font-medium text-foreground-muted">—</span>
+                  <span class="font-medium text-foreground-muted">{{ formatGrowth(metrics()?.revenueGrowthPercent) }}</span>
                   <span class="text-foreground-muted">vs last month</span>
                 </p>
               </div>
@@ -186,6 +186,14 @@ export class AdminDashboardPage implements OnInit {
   recentWebsites = signal<AdminWebsiteResponse[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+
+  formatGrowth(value: number | null | undefined): string {
+    if (value == null || !Number.isFinite(value)) {
+      return '—';
+    }
+
+    return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+  }
 
   ngOnInit(): void {
     forkJoin({
