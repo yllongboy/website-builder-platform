@@ -20,7 +20,7 @@ public class AdminMetricsTimeSeriesController {
     private final AdminMetricsTimeSeriesService adminMetricsTimeSeriesService;
 
     @GetMapping("/timeseries")
-    public List<AdminMetricsTimeSeriesBucket> getTimeSeries(@RequestParam(required = false) String period) {
+    public List<AdminMetricsTimeSeriesBucket> getTimeSeries(@RequestParam(required = true) String period) {
         if (!"6m".equals(period)) {
             throw new ApiException("ADMIN_METRICS_PERIOD_INVALID", "Unsupported metrics period. Supported value: 6m");
         }
