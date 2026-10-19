@@ -1177,7 +1177,7 @@ components:
 
     AdminMetricsResponse:
       type: object
-      required: [totalUsers, totalWebsites, totalActiveSubscriptions, monthlyRevenueCents]
+      required: [totalUsers, totalWebsites, totalActiveSubscriptions, monthlyRevenueCents, userGrowthPercent, subscriptionGrowthPercent, websiteGrowthPercent, revenueGrowthPercent]
       properties:
         totalUsers: { type: integer, format: int64 }
         totalWebsites: { type: integer, format: int64 }
@@ -1190,6 +1190,46 @@ components:
             Revenue in USD cents from persisted paid invoice snapshots in the current UTC calendar month.
             Historical invoices from before invoice snapshot persistence was introduced are not backfilled.
             Returns zero when no paid invoice snapshots exist for the current month.
+        userGrowthPercent:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Percentage growth in users created during the current UTC calendar month to date compared with
+            users created during the prior full UTC calendar month. Uses users.created_at. Calculated as
+            ((current month-to-date count - prior full-month count) / prior full-month count) * 100 and
+            rounded half-up to one decimal place. Null when the prior full-month count is zero.
+        subscriptionGrowthPercent:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Percentage growth in subscription records created during the current UTC calendar month to date
+            compared with records created during the prior full UTC calendar month. Uses subscriptions.created_at,
+            regardless of current subscription status. Calculated as ((current month-to-date count - prior
+            full-month count) / prior full-month count) * 100 and rounded half-up to one decimal place. Null
+            when the prior full-month count is zero.
+        websiteGrowthPercent:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Percentage growth in websites created during the current UTC calendar month to date compared with
+            websites created during the prior full UTC calendar month. Uses websites.created_at. Calculated as
+            ((current month-to-date count - prior full-month count) / prior full-month count) * 100 and rounded
+            half-up to one decimal place. Null when the prior full-month count is zero.
+        revenueGrowthPercent:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Percentage growth in USD revenue paid during the current UTC calendar month to date compared with
+            revenue paid during the prior full UTC calendar month. Uses persisted paid invoice snapshots in
+            paid_invoice_snapshots, grouped by paid_at. Calculated as ((current month-to-date revenue - prior
+            full-month revenue) / prior full-month revenue) * 100 and rounded half-up to one decimal place.
+            Null when prior full-month revenue is zero. Snapshot coverage begins at invoice snapshot rollout;
+            historical invoices from before rollout are not backfilled, so the prior-month comparison may be
+            incomplete when that month predates rollout.
 
     AdminMetricsTimeSeriesBucket:
       type: object

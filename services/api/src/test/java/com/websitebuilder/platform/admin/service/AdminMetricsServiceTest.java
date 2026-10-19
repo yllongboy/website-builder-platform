@@ -1,6 +1,8 @@
 package com.websitebuilder.platform.admin.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +13,9 @@ import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotReposit
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.users.repository.UserRepository;
 import com.websitebuilder.platform.websites.repository.WebsiteRepository;
+import java.math.BigDecimal;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,19 +36,25 @@ class AdminMetricsServiceTest {
                 userRepository, websiteRepository, subscriptionRepository, paidInvoiceSnapshotRepository);
 
         when(userRepository.count()).thenReturn(5L);
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
+                .thenReturn(13L, 10L);
         when(websiteRepository.count()).thenReturn(10L);
+        when(websiteRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
+                .thenReturn(17L, 12L);
         when(subscriptionRepository.countByStatusIn(
                 List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING)))
                 .thenReturn(3L);
+        when(subscriptionRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
+                .thenReturn(5L, 3L);
         when(paidInvoiceSnapshotRepository.findMonthlyRevenueCents(
-                org.mockito.ArgumentMatchers.eq("usd"),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of(revenue(12500L)));
+                eq("usd"), any(), any()))
+                .thenReturn(List.of(revenue(12500L, true), revenue(10000L, false)));
 
         AdminMetricsResponse response = service.getMetrics();
 
-        assertEquals(new AdminMetricsResponse(5L, 10L, 3L, 12500L), response);
+        assertEquals(new AdminMetricsResponse(5L, 10L, 3L, 12500L,
+                new BigDecimal("30.0"), new BigDecimal("66.7"), new BigDecimal("41.7"),
+                new BigDecimal("25.0")), response);
     }
 
     @Test
@@ -76,14 +87,15 @@ class AdminMetricsServiceTest {
 
         AdminMetricsResponse response = service.getMetrics();
 
-        assertEquals(new AdminMetricsResponse(0L, 0L, 0L, 0L), response);
+        assertEquals(new AdminMetricsResponse(0L, 0L, 0L, 0L, null, null, null, null), response);
     }
 
-    private PaidInvoiceMonthlyRevenueProjection revenue(long cents) {
+    private PaidInvoiceMonthlyRevenueProjection revenue(long cents, boolean currentMonth) {
         return new PaidInvoiceMonthlyRevenueProjection() {
             @Override
             public java.time.LocalDate getMonth() {
-                return java.time.LocalDate.now(java.time.ZoneOffset.UTC).withDayOfMonth(1);
+                YearMonth month = YearMonth.now(ZoneOffset.UTC);
+                return month.minusMonths(currentMonth ? 0 : 1).atDay(1);
             }
 
             @Override
