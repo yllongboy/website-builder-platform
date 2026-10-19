@@ -1,4 +1,11 @@
 import { UserRole } from './user-role';
 import { UserStatus } from './user-status';
 
-export interface UserDetail { id: string; email: string; role: UserRole; status: UserStatus; }
+export interface UserDetail {
+  id: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  firstName?: string | null;
+  lastName?: string | null;
+}
