@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websitebuilder.platform.assets.repository.AssetRepository;
 import com.websitebuilder.platform.admin.activity.repository.ActivityEventRepository;
 import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
+import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.StripeEventRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.categories.repository.CategoryRepository;
@@ -86,6 +87,9 @@ class JwtRevocationIntegrationTest {
 
     @MockBean
     private StripeEventRepository stripeEventRepository;
+
+    @MockBean
+    private PaidInvoiceSnapshotRepository paidInvoiceSnapshotRepository;
 
     @MockBean
     private AssetRepository assetRepository;
