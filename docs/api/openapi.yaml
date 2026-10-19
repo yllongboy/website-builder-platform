@@ -1177,10 +1177,15 @@ components:
 
     AdminMetricsResponse:
       type: object
-      required: [totalUsers, totalWebsites, totalActiveSubscriptions, monthlyRevenueCents, userGrowthPercent, subscriptionGrowthPercent, websiteGrowthPercent, revenueGrowthPercent]
+      required: [totalUsers, totalWebsites, publishedWebsites, totalActiveSubscriptions, monthlyRevenueCents, userGrowthPercent, subscriptionGrowthPercent, websiteGrowthPercent, revenueGrowthPercent]
       properties:
         totalUsers: { type: integer, format: int64 }
         totalWebsites: { type: integer, format: int64 }
+        publishedWebsites:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Number of websites currently in PUBLISHED status.
         totalActiveSubscriptions: { type: integer, format: int64 }
         monthlyRevenueCents:
           type: integer
