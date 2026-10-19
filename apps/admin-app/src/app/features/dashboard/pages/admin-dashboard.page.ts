@@ -92,7 +92,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
             <div class="flex items-start justify-between">
               <div class="flex-1 min-w-0">
                 <p class="text-[13px] font-medium text-foreground-muted">Monthly Revenue</p>
-                <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">—</p>
+                <p class="text-[22px] tabular-nums font-semibold text-foreground mt-1 tracking-tight">{{ ((metrics()?.monthlyRevenueCents ?? 0) / 100) | currency:'USD':'symbol':'1.2-2' }}</p>
                 <p class="text-xs mt-3 flex items-center gap-1">
                   <span class="font-medium text-foreground-muted">—</span>
                   <span class="text-foreground-muted">vs last month</span>

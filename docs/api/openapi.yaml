@@ -1177,11 +1177,19 @@ components:
 
     AdminMetricsResponse:
       type: object
-      required: [totalUsers, totalWebsites, totalActiveSubscriptions]
+      required: [totalUsers, totalWebsites, totalActiveSubscriptions, monthlyRevenueCents]
       properties:
         totalUsers: { type: integer, format: int64 }
         totalWebsites: { type: integer, format: int64 }
         totalActiveSubscriptions: { type: integer, format: int64 }
+        monthlyRevenueCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >-
+            Revenue in USD cents from persisted paid invoice snapshots in the current UTC calendar month.
+            Historical invoices from before invoice snapshot persistence was introduced are not backfilled.
+            Returns zero when no paid invoice snapshots exist for the current month.
 
     AdminMetricsTimeSeriesBucket:
       type: object
