@@ -19,7 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(
         properties = {
-                "app.jwt.secret=01234567890123456789012345678901",
+                "APP_JWT_SECRET=01234567890123456789012345678901",
                 "app.cors.allowed-origins=http://localhost:4200"
         }
 )
@@ -59,7 +59,7 @@ class TokenBlocklistPostgresIntegrationTest {
                         "spring.datasource.username=" + POSTGRES.getUsername(),
                         "spring.datasource.password=" + POSTGRES.getPassword(),
                         "spring.datasource.driver-class-name=" + POSTGRES.getDriverClassName(),
-                        "app.jwt.secret=01234567890123456789012345678901",
+                        "APP_JWT_SECRET=01234567890123456789012345678901",
                         "app.cors.allowed-origins=http://localhost:4200"
                 )
                 .run()) {
