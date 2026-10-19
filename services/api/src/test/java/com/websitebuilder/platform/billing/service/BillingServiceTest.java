@@ -39,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -163,6 +164,7 @@ class BillingServiceTest {
     void completedCheckout_existingLocalRowWithNewProviderId_recordsOnceAndIsIdempotent() throws Exception {
         BillingService billingService = newBillingService();
         ReflectionTestUtils.setField(billingService, "webhookSecret", "whsec_test_activity");
+        ReflectionTestUtils.setField(billingService, "stripeSecretKey", "sk_test_activity");
         UserEntity checkoutUser = new UserEntity(TEST_USER_ID, "activity@example.com", "hash", UserRole.USER,
                 UserStatus.ACTIVE, Instant.now(), Instant.now());
         SubscriptionEntity existing = new SubscriptionEntity(UUID.randomUUID(), checkoutUser, "stripe", null, null,
@@ -180,12 +182,20 @@ class BillingServiceTest {
             return event;
         }).when(stripeEventRepository).save(any(StripeEventEntity.class));
 
-        String firstPayload = checkoutCompletedPayload("evt_activity_1", TEST_USER_ID, "sub_distinct_1");
-        billingService.handleWebhook(firstPayload, signature(firstPayload, "whsec_test_activity"));
-        billingService.handleWebhook(firstPayload, signature(firstPayload, "whsec_test_activity"));
+        com.stripe.model.Subscription authoritativeStripeSubscription = mock(com.stripe.model.Subscription.class);
+        when(authoritativeStripeSubscription.getStatus()).thenReturn("active");
+        try (MockedStatic<com.stripe.model.Subscription> stripeSubscriptions =
+                     org.mockito.Mockito.mockStatic(com.stripe.model.Subscription.class)) {
+            stripeSubscriptions.when(() -> com.stripe.model.Subscription.retrieve("sub_distinct_1"))
+                    .thenReturn(authoritativeStripeSubscription);
 
-        String duplicateProviderPayload = checkoutCompletedPayload("evt_activity_2", TEST_USER_ID, "sub_distinct_1");
-        billingService.handleWebhook(duplicateProviderPayload, signature(duplicateProviderPayload, "whsec_test_activity"));
+            String firstPayload = checkoutCompletedPayload("evt_activity_1", TEST_USER_ID, "sub_distinct_1");
+            billingService.handleWebhook(firstPayload, signature(firstPayload, "whsec_test_activity"));
+            billingService.handleWebhook(firstPayload, signature(firstPayload, "whsec_test_activity"));
+
+            String duplicateProviderPayload = checkoutCompletedPayload("evt_activity_2", TEST_USER_ID, "sub_distinct_1");
+            billingService.handleWebhook(duplicateProviderPayload, signature(duplicateProviderPayload, "whsec_test_activity"));
+        }
 
         verify(subscriptionRepository, org.mockito.Mockito.times(2)).save(existing);
         verify(activityEventService).record(ActivityEventType.SUBSCRIPTION_CREATED,
