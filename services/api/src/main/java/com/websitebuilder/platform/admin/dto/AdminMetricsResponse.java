@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record AdminMetricsResponse(
         long totalUsers,
         long totalWebsites,
+        long publishedWebsites,
         long totalActiveSubscriptions,
         long monthlyRevenueCents,
         BigDecimal userGrowthPercent,

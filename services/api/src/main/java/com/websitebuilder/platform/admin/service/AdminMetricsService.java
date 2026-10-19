@@ -6,6 +6,7 @@ import com.websitebuilder.platform.billing.repository.PaidInvoiceMonthlyRevenueP
 import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.users.repository.UserRepository;
+import com.websitebuilder.platform.websites.entity.WebsiteStatus;
 import com.websitebuilder.platform.websites.repository.WebsiteRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,6 +32,7 @@ public class AdminMetricsService {
     public AdminMetricsResponse getMetrics() {
         long totalUsers = userRepository.count();
         long totalWebsites = websiteRepository.count();
+        long publishedWebsites = websiteRepository.countByStatus(WebsiteStatus.PUBLISHED);
         long totalActiveSubscriptions = subscriptionRepository.countByStatusIn(
                 List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING)
         );
@@ -57,7 +59,7 @@ public class AdminMetricsService {
         long previousRevenueCents = revenueByMonth.getOrDefault(currentUtcMonth.minusMonths(1).atDay(1), 0L);
 
         return new AdminMetricsResponse(
-                totalUsers, totalWebsites, totalActiveSubscriptions, monthlyRevenueCents,
+                totalUsers, totalWebsites, publishedWebsites, totalActiveSubscriptions, monthlyRevenueCents,
                 growthPercent(currentUsers, previousUsers),
                 growthPercent(currentSubscriptions, previousSubscriptions),
                 growthPercent(currentWebsites, previousWebsites),

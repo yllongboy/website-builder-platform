@@ -12,6 +12,7 @@ import com.websitebuilder.platform.billing.repository.PaidInvoiceMonthlyRevenueP
 import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.users.repository.UserRepository;
+import com.websitebuilder.platform.websites.entity.WebsiteStatus;
 import com.websitebuilder.platform.websites.repository.WebsiteRepository;
 import java.math.BigDecimal;
 import java.time.YearMonth;
@@ -39,6 +40,7 @@ class AdminMetricsServiceTest {
         when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
                 .thenReturn(13L, 10L);
         when(websiteRepository.count()).thenReturn(10L);
+        when(websiteRepository.countByStatus(WebsiteStatus.PUBLISHED)).thenReturn(4L);
         when(websiteRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
                 .thenReturn(17L, 12L);
         when(subscriptionRepository.countByStatusIn(
@@ -52,7 +54,7 @@ class AdminMetricsServiceTest {
 
         AdminMetricsResponse response = service.getMetrics();
 
-        assertEquals(new AdminMetricsResponse(5L, 10L, 3L, 12500L,
+        assertEquals(new AdminMetricsResponse(5L, 10L, 4L, 3L, 12500L,
                 new BigDecimal("30.0"), new BigDecimal("66.7"), new BigDecimal("41.7"),
                 new BigDecimal("25.0")), response);
     }
@@ -87,7 +89,7 @@ class AdminMetricsServiceTest {
 
         AdminMetricsResponse response = service.getMetrics();
 
-        assertEquals(new AdminMetricsResponse(0L, 0L, 0L, 0L, null, null, null, null), response);
+        assertEquals(new AdminMetricsResponse(0L, 0L, 0L, 0L, 0L, null, null, null, null), response);
     }
 
     private PaidInvoiceMonthlyRevenueProjection revenue(long cents, boolean currentMonth) {
