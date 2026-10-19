@@ -500,6 +500,60 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /admin/metrics/timeseries:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get six-month admin metrics time series
+      description: >-
+        Requires ROLE_ADMIN. Returns six UTC calendar-month buckets from the
+        oldest month through the current partial month, with missing values
+        zero-filled. User counts use users.created_at. Revenue uses locally
+        persisted paid Stripe invoice snapshots in USD grouped by invoice paid
+        timestamp. Revenue coverage begins at snapshot rollout; pre-rollout
+        historical invoices are not backfilled.
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: Supported time-series period
+          schema:
+            type: string
+            enum: [6m]
+      responses:
+        '200':
+          description: Six monthly metrics buckets, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                minItems: 6
+                maxItems: 6
+                items: { $ref: '#/components/schemas/AdminMetricsTimeSeriesBucket' }
+        '400':
+          description: Unsupported period value
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message]
+                properties:
+                  code: { type: string, example: ADMIN_METRICS_PERIOD_INVALID }
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500':
+          description: Metrics data could not be retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message]
+                properties:
+                  code: { type: string, example: INTERNAL_ERROR }
+                  message: { type: string }
+
   /admin/activity:
     get:
       tags: [Admin]
@@ -1128,6 +1182,25 @@ components:
         totalUsers: { type: integer, format: int64 }
         totalWebsites: { type: integer, format: int64 }
         totalActiveSubscriptions: { type: integer, format: int64 }
+
+    AdminMetricsTimeSeriesBucket:
+      type: object
+      required: [month, userCount, revenueCents]
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-\d{2}$'
+          description: UTC calendar month in YYYY-MM format
+        userCount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Number of users whose created_at falls within this UTC month
+        revenueCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Sum of paid USD Stripe invoice amount_paid values, in cents, by UTC paid month
 
     AdminActivityRecord:
       type: object

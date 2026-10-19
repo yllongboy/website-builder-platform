@@ -6,6 +6,7 @@ import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
+import com.stripe.model.Invoice;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
@@ -21,6 +22,7 @@ import com.websitebuilder.platform.billing.dto.PortalResponse;
 import com.websitebuilder.platform.billing.entity.StripeEventEntity;
 import com.websitebuilder.platform.billing.entity.SubscriptionEntity;
 import com.websitebuilder.platform.billing.repository.StripeEventRepository;
+import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.users.entity.UserEntity;
@@ -40,6 +42,7 @@ public class BillingService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final StripeEventRepository stripeEventRepository;
+    private final PaidInvoiceSnapshotRepository paidInvoiceSnapshotRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final Environment environment;
@@ -63,6 +66,7 @@ public class BillingService {
     public BillingService(
             SubscriptionRepository subscriptionRepository,
             StripeEventRepository stripeEventRepository,
+            PaidInvoiceSnapshotRepository paidInvoiceSnapshotRepository,
             UserRepository userRepository,
             ObjectMapper objectMapper,
             Environment environment,
@@ -70,6 +74,7 @@ public class BillingService {
     ) {
         this.subscriptionRepository = subscriptionRepository;
         this.stripeEventRepository = stripeEventRepository;
+        this.paidInvoiceSnapshotRepository = paidInvoiceSnapshotRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.environment = environment;
@@ -170,6 +175,7 @@ public class BillingService {
 
         switch (event.getType()) {
             case "checkout.session.completed" -> handleCheckoutSessionCompleted(event);
+            case "invoice.paid" -> handleInvoicePaid(event);
             case "customer.subscription.updated" -> handleSubscriptionUpdated(event);
             case "customer.subscription.deleted" -> handleSubscriptionDeleted(event);
             default -> {
@@ -185,6 +191,30 @@ public class BillingService {
                 toJsonNode(payload),
                 Instant.now()
         ));
+    }
+
+    private void handleInvoicePaid(Event event) {
+        Invoice invoice = requiredObject(event, Invoice.class);
+        Long amountPaidCents = invoice.getAmountPaid();
+        String currency = invoice.getCurrency();
+        Long paidAtEpochSeconds = invoice.getStatusTransitions() == null
+                ? null
+                : invoice.getStatusTransitions().getPaidAt();
+
+        if (invoice.getId() == null || invoice.getId().isBlank()
+                || amountPaidCents == null || amountPaidCents < 0
+                || currency == null || !currency.matches("[A-Za-z]{3}")
+                || paidAtEpochSeconds == null) {
+            throw new ApiException("STRIPE_EVENT_INVALID", "Paid invoice is missing required snapshot fields");
+        }
+
+        // Stripe's paid transition is the business timestamp; event.created represents delivery timing.
+        paidInvoiceSnapshotRepository.insertIfAbsent(
+                invoice.getId(),
+                amountPaidCents,
+                currency.toLowerCase(java.util.Locale.ROOT),
+                Instant.ofEpochSecond(paidAtEpochSeconds)
+        );
     }
 
     private void handleCheckoutSessionCompleted(Event event) {

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import com.websitebuilder.platform.billing.dto.SubscriptionStatus;
 import com.websitebuilder.platform.billing.entity.StripeEventEntity;
 import com.websitebuilder.platform.billing.entity.SubscriptionEntity;
 import com.websitebuilder.platform.billing.repository.StripeEventRepository;
+import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.users.entity.UserEntity;
 import com.websitebuilder.platform.users.entity.UserRole;
@@ -222,6 +224,7 @@ class BillingServiceTest {
         return new BillingService(
                 subscriptionRepository,
                 stripeEventRepository,
+                mock(PaidInvoiceSnapshotRepository.class),
                 userRepository,
                 objectMapper,
                 environment,
