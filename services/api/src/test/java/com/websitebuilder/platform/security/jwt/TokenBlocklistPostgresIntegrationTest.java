@@ -7,21 +7,23 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import com.websitebuilder.platform.WebsiteBuilderPlatformApplication;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(TokenBlocklistService.class)
-@Testcontainers(disabledWithoutDocker = true)
+@SpringBootTest(
+        properties = {
+                "app.jwt.secret=01234567890123456789012345678901",
+                "app.cors.allowed-origins=http://localhost:4200"
+        }
+)
+@Testcontainers
 class TokenBlocklistPostgresIntegrationTest {
 
     @Container
@@ -45,19 +47,28 @@ class TokenBlocklistPostgresIntegrationTest {
     private RevokedTokenRepository revokedTokenRepository;
 
     @Test
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void revokedJti_survivesFreshServiceUsingSameMigratedDatabase() {
+    void revokedJti_survivesApplicationContextRestartAgainstSameDatabase() {
         String jti = "restart-test-" + UUID.randomUUID();
         Instant expiresAt = Instant.now().plusSeconds(600);
         tokenBlocklistService.revoke(jti, expiresAt);
 
-        TokenBlocklistService freshService = new TokenBlocklistService(revokedTokenRepository);
-
-        assertTrue(freshService.isRevoked(jti));
+        try (var restartedApplication = new SpringApplicationBuilder(WebsiteBuilderPlatformApplication.class)
+                .web(WebApplicationType.NONE)
+                .properties(
+                        "spring.datasource.url=" + POSTGRES.getJdbcUrl(),
+                        "spring.datasource.username=" + POSTGRES.getUsername(),
+                        "spring.datasource.password=" + POSTGRES.getPassword(),
+                        "spring.datasource.driver-class-name=" + POSTGRES.getDriverClassName(),
+                        "app.jwt.secret=01234567890123456789012345678901",
+                        "app.cors.allowed-origins=http://localhost:4200"
+                )
+                .run()) {
+            TokenBlocklistService restartedService = restartedApplication.getBean(TokenBlocklistService.class);
+            assertTrue(restartedService.isRevoked(jti));
+        }
     }
 
     @Test
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void evictExpired_removesExpiredJtisAndRetainsUnexpiredJtis() {
         String expiredJti = "expired-" + UUID.randomUUID();
         String activeJti = "active-" + UUID.randomUUID();
