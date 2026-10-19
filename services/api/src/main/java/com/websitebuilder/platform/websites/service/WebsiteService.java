@@ -311,27 +311,23 @@ public class WebsiteService {
 
         PublishLogEntity log = publishLogService.logStarted(website);
 
+        String mergedHtml = injectCssIntoHtml(version.htmlContent(), version.cssContent());
+        String userSlug = buildUserSlug(user);
         try {
-            String mergedHtml = injectCssIntoHtml(version.htmlContent(), version.cssContent());
-            r2UploadService.uploadSiteFiles(
-                    buildUserSlug(user),
-                    website.slug(),
-                mergedHtml,
-                    version.cssContent()
-            );
-
-            website.setPublishedUrl(buildPublishedUrl(user, website));
-            website.setStatus(WebsiteStatus.PUBLISHED);
-            website.setLastPublishedAt(Instant.now());
-            websiteRepository.save(website);
-
-            publishLogService.logSuccess(log, website.publishedUrl());
-            recordWebsitePublished(website, user);
-            return new PublishResponse("SUCCESS", website.publishedUrl(), null);
+            r2UploadService.uploadSiteFiles(userSlug, website.slug(), mergedHtml, version.cssContent());
         } catch (Exception ex) {
             publishLogService.logFailed(log, "R2 upload failed");
             throw new ApiException("PUBLISH_FAILED", "Failed to publish website to R2");
         }
+
+        website.setPublishedUrl(buildPublishedUrl(user, website));
+        website.setStatus(WebsiteStatus.PUBLISHED);
+        website.setLastPublishedAt(Instant.now());
+        websiteRepository.save(website);
+
+        publishLogService.logSuccess(log, website.publishedUrl());
+        recordWebsitePublished(website, user);
+        return new PublishResponse("SUCCESS", website.publishedUrl(), null);
     }
 
     @Transactional
@@ -352,25 +348,21 @@ public class WebsiteService {
 
         PublishLogEntity log = publishLogService.logStarted(website);
 
+        String mergedHtml = injectCssIntoHtml(version.htmlContent(), version.cssContent());
+        String userSlug = buildUserSlug(user);
         try {
-            String mergedHtml = injectCssIntoHtml(version.htmlContent(), version.cssContent());
-            r2UploadService.uploadSiteFiles(
-                    buildUserSlug(user),
-                    website.slug(),
-                mergedHtml,
-                    version.cssContent()
-            );
-
-            website.setLastPublishedAt(Instant.now());
-            websiteRepository.save(website);
-
-            publishLogService.logSuccess(log, website.publishedUrl());
-            recordWebsitePublished(website, user);
-            return new PublishResponse("SUCCESS", website.publishedUrl(), null);
+            r2UploadService.uploadSiteFiles(userSlug, website.slug(), mergedHtml, version.cssContent());
         } catch (Exception ex) {
             publishLogService.logFailed(log, "Failed to republish website");
             throw new ApiException("REPUBLISH_FAILED", "Failed to republish website to R2");
         }
+
+        website.setLastPublishedAt(Instant.now());
+        websiteRepository.save(website);
+
+        publishLogService.logSuccess(log, website.publishedUrl());
+        recordWebsitePublished(website, user);
+        return new PublishResponse("SUCCESS", website.publishedUrl(), null);
     }
 
     @Transactional
