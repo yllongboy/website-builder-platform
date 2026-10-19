@@ -96,8 +96,8 @@ public class AuthService {
             throw new ApiException("AUTH_INVALID_CREDENTIALS", "Invalid session");
         }
 
-        String token = authorizationHeader.substring(7);
-        if (!jwtService.validateToken(token)) {
+        String token = authorizationHeader.substring(7).trim();
+        if (token.isBlank() || !jwtService.validateToken(token)) {
             throw new ApiException("AUTH_INVALID_CREDENTIALS", "Invalid session");
         }
 
