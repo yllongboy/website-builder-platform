@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,6 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminBillingService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminBillingService.class);
+    private static final Set<String> STRIPE_ZERO_DECIMAL_CURRENCIES = Set.of(
+            "BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA", "PYG", "RWF",
+            "VND", "VUV", "XAF", "XOF", "XPF"
+    );
 
     private static final List<SubscriptionStatus> ACTIVE_STATUSES = List.of(
             SubscriptionStatus.ACTIVE,
@@ -181,11 +186,13 @@ public class AdminBillingService {
             return null;
         }
         try {
-            int fractionDigits = java.util.Currency.getInstance(currencyCode.toUpperCase(Locale.ROOT))
-                    .getDefaultFractionDigits();
-            if (fractionDigits < 0) {
+            String normalizedCurrency = currencyCode.toUpperCase(Locale.ROOT);
+            if (java.util.Currency.getInstance(normalizedCurrency).getDefaultFractionDigits() < 0) {
                 return null;
             }
+            // Stripe uses zero minor-unit digits only for its documented zero-decimal set.
+            // ISK and UGX are exceptions: Stripe retains two-decimal API amounts for backwards compatibility.
+            int fractionDigits = STRIPE_ZERO_DECIMAL_CURRENCIES.contains(normalizedCurrency) ? 0 : 2;
             return BigDecimal.valueOf(amountMinor, fractionDigits);
         } catch (IllegalArgumentException ex) {
             return null;
