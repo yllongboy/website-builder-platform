@@ -11,6 +11,8 @@ export interface UserSummary {
   id: string;
   email: string;
   role: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 export interface UserDetail extends UserSummary {
@@ -20,6 +22,8 @@ export interface UserDetail extends UserSummary {
 export interface RegisterRequest {
   email: string;
   password: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 export interface LoginRequest {

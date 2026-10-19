@@ -8,6 +8,8 @@ import org.springframework.lang.Nullable;
 public record AdminUserResponse(
 	UUID id,
 	String email,
+	@Nullable String firstName,
+	@Nullable String lastName,
 	UserRole role,
 	UserStatus status,
 	Instant createdAt,

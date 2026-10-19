@@ -98,6 +98,8 @@ public class AdminUserService {
         return new AdminUserResponse(
                 user.id(),
                 user.email(),
+                user.firstName(),
+                user.lastName(),
                 UserRole.valueOf(user.role().name()),
                 UserStatus.valueOf(user.status().name()),
                 user.createdAt(),
