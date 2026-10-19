@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websitebuilder.platform.assets.repository.AssetRepository;
+import com.websitebuilder.platform.admin.activity.repository.ActivityEventRepository;
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.repository.StripeEventRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.categories.repository.CategoryRepository;
@@ -90,6 +92,12 @@ class JwtRevocationIntegrationTest {
 
     @MockBean
     private RevokedTokenRepository revokedTokenRepository;
+
+    @MockBean
+    private ActivityEventRepository activityEventRepository;
+
+    @MockBean
+    private ActivityEventService activityEventService;
 
     @Test
     void revokedToken_cannotAccessProtectedEndpoint() throws Exception {

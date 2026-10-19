@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -58,13 +59,16 @@ class WebsiteServiceEditorTest {
     private BillingService billingService;
 
     @Mock
-        private R2UploadService r2UploadService;
+    private R2UploadService r2UploadService;
 
-        @Mock
-        private PublishLogService publishLogService;
+    @Mock
+    private PublishLogService publishLogService;
 
-        @Mock
+    @Mock
     private PublishLogRepository publishLogRepository;
+
+    @Mock
+    private ActivityEventService activityEventService;
 
     private WebsiteService websiteService;
 
@@ -86,7 +90,8 @@ class WebsiteServiceEditorTest {
                         "secret",
                         "bucket",
                         "https://pub.sites.example.test"
-                )
+                ),
+                activityEventService
         );
     }
 

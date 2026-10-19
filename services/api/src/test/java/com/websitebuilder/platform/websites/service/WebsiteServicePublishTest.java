@@ -6,9 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -68,6 +71,9 @@ class WebsiteServicePublishTest {
     @Mock
     private PublishLogRepository publishLogRepository;
 
+    @Mock
+    private ActivityEventService activityEventService;
+
     @Test
     @DisplayName("publish owner with active subscription returns success")
     void publish_ownerWithActiveSubscription_returnsSuccess() {
@@ -91,6 +97,8 @@ class WebsiteServicePublishTest {
         assertEquals(expectedPublishedUrl, result.publishedUrl());
         verify(r2UploadService).uploadSiteFiles(eq(expectedUserSlug), eq("sprint-5-test-site"), anyString(), any());
         verify(publishLogService).logSuccess(log, expectedPublishedUrl);
+        verify(activityEventService).record(
+                ActivityEventType.WEBSITE_PUBLISHED, "Website published: " + website.name(), owner.email());
     }
 
     @Test
@@ -108,6 +116,7 @@ class WebsiteServicePublishTest {
         assertEquals("WEBSITE_ACCESS_DENIED", exception.code());
         verify(billingService, never()).canPublish(attacker);
         verify(r2UploadService, never()).uploadSiteFiles(anyString(), anyString(), anyString(), any());
+        verify(activityEventService, never()).record(any(), anyString(), anyString());
     }
 
     @Test
@@ -124,6 +133,29 @@ class WebsiteServicePublishTest {
 
         assertEquals("SUBSCRIPTION_REQUIRED", exception.code());
         verify(r2UploadService, never()).uploadSiteFiles(anyString(), anyString(), anyString(), any());
+        verify(activityEventService, never()).record(any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("publish upload failure does not record a published activity event")
+    void publish_uploadFailure_doesNotRecordActivity() {
+        WebsiteService websiteService = newWebsiteService();
+        UserEntity owner = testUser("owner@example.com");
+        WebsiteEntity website = testWebsite(owner);
+        WebsiteVersionEntity version = testVersion(website);
+        PublishLogEntity log = testLog(website);
+        when(websiteRepository.findById(website.id())).thenReturn(Optional.of(website));
+        when(billingService.canPublish(owner)).thenReturn(true);
+        when(websiteVersionRepository.findCurrentByWebsiteIdAndUserId(website.id(), owner.id()))
+                .thenReturn(Optional.of(version));
+        when(publishLogService.logStarted(website)).thenReturn(log);
+        doThrow(new RuntimeException("R2 unavailable"))
+                .when(r2UploadService).uploadSiteFiles(anyString(), anyString(), anyString(), any());
+
+        ApiException exception = assertThrows(ApiException.class, () -> websiteService.publish(website.id(), owner));
+
+        assertEquals("PUBLISH_FAILED", exception.code());
+        verify(activityEventService, never()).record(any(), anyString(), anyString());
     }
 
     private WebsiteService newWebsiteService() {
@@ -143,7 +175,8 @@ class WebsiteServicePublishTest {
                     "secret",
                     "bucket",
                     "https://pub.sites.example.test"
-                )
+                ),
+                activityEventService
         );
     }
 

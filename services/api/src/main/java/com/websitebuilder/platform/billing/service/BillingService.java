@@ -12,6 +12,8 @@ import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.billingportal.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.LineItem;
+import com.websitebuilder.platform.admin.activity.entity.ActivityEventType;
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.dto.BillingStatusResponse;
 import com.websitebuilder.platform.billing.dto.CheckoutRequest;
 import com.websitebuilder.platform.billing.dto.CheckoutResponse;
@@ -41,6 +43,7 @@ public class BillingService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final Environment environment;
+    private final ActivityEventService activityEventService;
 
     @Value("${stripe.secret-key}")
     private String stripeSecretKey;
@@ -62,13 +65,15 @@ public class BillingService {
             StripeEventRepository stripeEventRepository,
             UserRepository userRepository,
             ObjectMapper objectMapper,
-            Environment environment
+            Environment environment,
+            ActivityEventService activityEventService
     ) {
         this.subscriptionRepository = subscriptionRepository;
         this.stripeEventRepository = stripeEventRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.environment = environment;
+        this.activityEventService = activityEventService;
     }
 
     @PostConstruct
@@ -193,9 +198,16 @@ public class BillingService {
                 .filter(value -> value != null && !value.isBlank())
                 .orElse("pro");
 
-        SubscriptionEntity subscription = subscriptionRepository
-                .findFirstByUserIdOrderByCreatedAtDesc(user.id())
-                .orElseGet(() -> new SubscriptionEntity(
+        Optional<SubscriptionEntity> existingSubscription = subscriptionRepository
+                .findFirstByUserIdOrderByCreatedAtDesc(user.id());
+        String providerSubscriptionId = session.getSubscription();
+        boolean createdProviderSubscription = providerSubscriptionId != null
+                && !providerSubscriptionId.isBlank()
+                && existingSubscription
+                        .map(SubscriptionEntity::providerSubscriptionId)
+                        .filter(providerSubscriptionId::equals)
+                        .isEmpty();
+        SubscriptionEntity subscription = existingSubscription.orElseGet(() -> new SubscriptionEntity(
                         UUID.randomUUID(),
                         user,
                         "stripe",
@@ -210,11 +222,19 @@ public class BillingService {
                 ));
 
         subscription.setProviderCustomerId(session.getCustomer());
-        subscription.setProviderSubscriptionId(session.getSubscription());
+        subscription.setProviderSubscriptionId(providerSubscriptionId);
         subscription.setStatus(com.websitebuilder.platform.billing.entity.SubscriptionStatus.ACTIVE);
         subscription.setPlanCode(planCode);
         subscription.setCancelAtPeriodEnd(false);
         subscriptionRepository.save(subscription);
+
+        if (createdProviderSubscription) {
+            activityEventService.record(
+                    ActivityEventType.SUBSCRIPTION_CREATED,
+                    "Subscription created for plan " + planCode,
+                    user.email()
+            );
+        }
     }
 
     private void handleSubscriptionUpdated(Event event) {

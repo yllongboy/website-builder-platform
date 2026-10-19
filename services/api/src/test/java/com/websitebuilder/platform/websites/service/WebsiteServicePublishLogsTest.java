@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
 import com.websitebuilder.platform.billing.service.BillingService;
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.util.HtmlSanitizer;
@@ -65,6 +66,9 @@ class WebsiteServicePublishLogsTest {
 
     @Mock
     private PublishLogRepository publishLogRepository;
+
+    @Mock
+    private ActivityEventService activityEventService;
 
     @Test
     @DisplayName("getPublishLogs owner receives ordered logs")
@@ -155,7 +159,8 @@ class WebsiteServicePublishLogsTest {
                         "secret",
                         "bucket",
                         "https://pub.sites.example.test"
-                )
+                ),
+                activityEventService
         );
     }
 
