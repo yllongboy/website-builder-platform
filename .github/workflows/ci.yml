@@ -42,7 +42,7 @@ jobs:
         continue-on-error: true
 
   backend-checks:
-    name: "[Sprint 0 Placeholder] Backend Checks"
+    name: Backend Build and Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,5 +62,4 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Build and verify
-        run: mvn -f services/pom.xml verify --no-transfer-progress -DskipTests
-        continue-on-error: true
+        run: mvn -f services/pom.xml verify --no-transfer-progress

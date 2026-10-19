@@ -1,6 +1,9 @@
 package com.websitebuilder.platform.auth.controller;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,6 +16,7 @@ import com.websitebuilder.platform.billing.repository.StripeEventRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
 import com.websitebuilder.platform.categories.repository.CategoryRepository;
 import com.websitebuilder.platform.publishing.repository.PublishLogRepository;
+import com.websitebuilder.platform.security.jwt.RevokedTokenRepository;
 import com.websitebuilder.platform.templates.repository.TemplateRepository;
 import com.websitebuilder.platform.users.entity.UserEntity;
 import com.websitebuilder.platform.users.entity.UserRole;
@@ -21,6 +25,7 @@ import com.websitebuilder.platform.users.repository.UserRepository;
 import com.websitebuilder.platform.websites.repository.WebsiteRepository;
 import com.websitebuilder.platform.websites.repository.WebsiteVersionRepository;
 import java.time.Instant;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -83,8 +88,19 @@ class JwtRevocationIntegrationTest {
     @MockBean
     private AssetRepository assetRepository;
 
+    @MockBean
+    private RevokedTokenRepository revokedTokenRepository;
+
     @Test
     void revokedToken_cannotAccessProtectedEndpoint() throws Exception {
+        Set<String> revokedJtis = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        doAnswer(invocation -> {
+            revokedJtis.add(invocation.getArgument(0));
+            return 1;
+        }).when(revokedTokenRepository).revoke(anyString(), any(Instant.class));
+        when(revokedTokenRepository.existsByJtiAndExpiresAtAfter(anyString(), any(Instant.class)))
+                .thenAnswer(invocation -> revokedJtis.contains(invocation.getArgument(0)));
+
         UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         String email = "user@example.com";
         String password = "Password123!";

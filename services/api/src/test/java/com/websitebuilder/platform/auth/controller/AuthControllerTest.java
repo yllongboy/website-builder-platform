@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.websitebuilder.platform.auth.service.AuthService;
 import com.websitebuilder.platform.common.exceptions.GlobalExceptionHandler;
+import com.websitebuilder.platform.security.filters.JwtAuthenticationFilter;
 import com.websitebuilder.platform.security.jwt.JwtService;
 import com.websitebuilder.platform.security.jwt.TokenBlocklistService;
 import java.time.Instant;
@@ -36,6 +37,9 @@ class AuthControllerTest {
 
     @MockBean
     private TokenBlocklistService tokenBlocklistService;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void logout_withValidToken_returnsOk() throws Exception {

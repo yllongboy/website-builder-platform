@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.exceptions.GlobalExceptionHandler;
+import com.websitebuilder.platform.security.filters.JwtAuthenticationFilter;
 import com.websitebuilder.platform.users.dto.UserStatus;
 import com.websitebuilder.platform.users.service.AdminUserService;
 import java.util.UUID;
@@ -29,6 +30,9 @@ class AdminUserControllerTest {
 
     @MockBean
     private AdminUserService adminUserService;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void patchStatus_withDeletedStatus_returnsBadRequest() throws Exception {
