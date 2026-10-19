@@ -20,6 +20,12 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -41,8 +47,14 @@ public class UserEntity {
     }
 
     public UserEntity(UUID id, String email, String passwordHash, UserRole role, UserStatus status, Instant createdAt, Instant updatedAt) {
+        this(id, email, null, null, passwordHash, role, status, createdAt, updatedAt);
+    }
+
+    public UserEntity(UUID id, String email, String firstName, String lastName, String passwordHash, UserRole role, UserStatus status, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.passwordHash = passwordHash;
         this.role = role;
         this.status = status;
@@ -57,6 +69,8 @@ public class UserEntity {
 
     public UUID id() { return id; }
     public String email() { return email; }
+    public String firstName() { return firstName; }
+    public String lastName() { return lastName; }
     public String passwordHash() { return passwordHash; }
     public UserRole role() { return role; }
     public UserStatus status() { return status; }

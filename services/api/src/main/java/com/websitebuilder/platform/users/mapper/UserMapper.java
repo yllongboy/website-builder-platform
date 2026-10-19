@@ -14,7 +14,9 @@ public class UserMapper {
         return new UserSummary(
             entity.id(),
             entity.email(),
-            UserRole.valueOf(entity.role().name())
+            UserRole.valueOf(entity.role().name()),
+            entity.firstName(),
+            entity.lastName()
         );
     }
 
@@ -23,7 +25,9 @@ public class UserMapper {
             entity.id(),
             entity.email(),
             UserRole.valueOf(entity.role().name()),
-            UserStatus.valueOf(entity.status().name())
+            UserStatus.valueOf(entity.status().name()),
+            entity.firstName(),
+            entity.lastName()
         );
     }
 }

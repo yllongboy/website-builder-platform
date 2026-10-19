@@ -84,10 +84,10 @@ import { IconComponent } from '../../../core/shared/icon.component';
               <td class="px-4 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
-                    {{ getUserInitial(user.email) }}
+                    {{ getUserInitial(user) }}
                   </div>
                   <div>
-                    <p class="text-[13px] font-medium text-foreground">—</p>
+                    <p class="text-[13px] font-medium text-foreground">{{ getDisplayName(user) }}</p>
                     <p class="text-[13px] text-foreground-muted">{{ user.email }}</p>
                   </div>
                 </div>
@@ -146,10 +146,10 @@ import { IconComponent } from '../../../core/shared/icon.component';
           <div class="px-6 py-5 flex flex-col gap-4">
             <div class="flex flex-col items-center gap-3">
               <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xl">
-                {{ getUserInitial(selectedUser?.email || '') }}
+                {{ selectedUser ? getUserInitial(selectedUser) : '—' }}
               </div>
               <div class="text-center">
-                <p class="text-base font-semibold text-foreground">—</p>
+                <p class="text-base font-semibold text-foreground">{{ selectedUser ? getDisplayName(selectedUser) : '—' }}</p>
                 <p class="text-[13px] text-foreground-muted">{{ selectedUser?.email }}</p>
               </div>
             </div>
@@ -332,8 +332,18 @@ export class UserAdminListPage implements OnInit {
     this.showReactivateModal = true;
   }
 
-  getUserInitial(email: string): string {
-    return email.charAt(0).toUpperCase();
+  getDisplayName(user: Pick<AdminUserResponse, 'firstName' | 'lastName'>): string {
+    const fullName = [user.firstName, user.lastName]
+      .map((part) => part?.trim())
+      .filter((part): part is string => Boolean(part))
+      .join(' ');
+    return fullName || '—';
+  }
+
+  getUserInitial(user: Pick<AdminUserResponse, 'firstName' | 'lastName' | 'email'>): string {
+    const name = this.getDisplayName(user);
+    const initialSource = name === '—' ? user.email : name;
+    return initialSource.trim().charAt(0).toUpperCase() || '—';
   }
 
   confirmSuspend(): void {

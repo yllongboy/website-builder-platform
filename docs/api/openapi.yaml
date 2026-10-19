@@ -967,6 +967,8 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 8, maxLength: 128 }
+        firstName: { type: string, nullable: true, maxLength: 100 }
+        lastName: { type: string, nullable: true, maxLength: 100 }
 
     LoginRequest:
       type: object
@@ -989,6 +991,8 @@ components:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         role: { $ref: '#/components/schemas/UserRole' }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
 
     UserDetail:
       allOf:
@@ -1190,6 +1194,8 @@ components:
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
         role: { $ref: '#/components/schemas/UserRole' }
         status: { $ref: '#/components/schemas/UserStatus' }
         subscriptionStatus: { $ref: '#/components/schemas/SubscriptionStatus', nullable: true }

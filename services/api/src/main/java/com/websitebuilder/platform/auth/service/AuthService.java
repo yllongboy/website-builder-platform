@@ -54,6 +54,8 @@ public class AuthService {
         UserEntity user = new UserEntity(
                 UUID.randomUUID(),
                 request.email(),
+                request.firstName(),
+                request.lastName(),
                 passwordEncoder.encode(request.password()),
                 com.websitebuilder.platform.users.entity.UserRole.USER,
                 com.websitebuilder.platform.users.entity.UserStatus.ACTIVE,

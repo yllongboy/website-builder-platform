@@ -23,6 +23,24 @@ import { CardComponent, ButtonComponent, InputComponent } from '@platform/ui';
         <ui-card padding="lg">
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
             <ui-input
+              label="First name (optional)"
+              id="firstName"
+              type="text"
+              formControlName="firstName"
+              autocomplete="given-name"
+              placeholder="Jane"
+            />
+
+            <ui-input
+              label="Last name (optional)"
+              id="lastName"
+              type="text"
+              formControlName="lastName"
+              autocomplete="family-name"
+              placeholder="Doe"
+            />
+
+            <ui-input
               label="Email"
               id="email"
               type="email"
@@ -77,6 +95,8 @@ export class RegisterPage {
   readonly error = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
+    firstName: ['', [Validators.maxLength(100)]],
+    lastName: ['', [Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
   });
