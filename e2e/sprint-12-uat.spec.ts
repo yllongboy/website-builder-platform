@@ -1,0 +1,160 @@
+import { expect, test } from '@playwright/test';
+
+const builderUrl = 'http://127.0.0.1:4200';
+const adminUrl = 'http://127.0.0.1:4201';
+const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@example.com';
+const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? 'password';
+
+test('SCRUM-137 - register, create a template website, edit and save content, and verify persistence', async ({ page }) => {
+  const email = `scrum137-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
+  await page.goto(`${builderUrl}/register`);
+  await page.getByLabel('First name (optional)').fill('Browser');
+  await page.getByLabel('Last name (optional)').fill('Automation');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password (min 8 characters)').fill('LocalOnly-12345');
+  await page.getByRole('button', { name: 'Register' }).click();
+
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+  const dashboardActions = page.getByRole('heading', { name: 'My Websites' }).locator('xpath=../..');
+  await dashboardActions.getByRole('button', { name: 'Create Website' }).click();
+  await expect(page.getByRole('heading', { name: 'Templates', exact: true })).toBeVisible();
+
+  const firstFreeTemplate = page
+    .locator('ui-card')
+    .filter({ hasNot: page.getByText('Premium', { exact: true }) })
+    .first();
+  const templateName = (await firstFreeTemplate.getByRole('heading').innerText()).trim();
+  await firstFreeTemplate.click();
+  await expect(page.getByRole('heading', { name: templateName })).toBeVisible();
+  await page.getByRole('button', { name: 'Use This Template' }).click();
+
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+  const website = page.locator('ui-card').filter({ hasText: templateName }).first();
+  await expect(website).toBeVisible();
+  await website.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+
+  const canvas = page.frameLocator('iframe.gjs-frame');
+  const paragraph = canvas.locator('body p').first();
+  await expect(paragraph).toBeVisible();
+  await paragraph.dblclick();
+  await expect(paragraph).toHaveAttribute('contenteditable', 'true');
+  const savedText = `SCRUM-137 browser edit ${Date.now()}`;
+  // GrapesJS's rich-text editor listens to keyboard/input events to update its
+  // component model. Locator.fill() only changed the iframe DOM and bypassed
+  // that model, so use the same select-and-type interaction as a person.
+  await paragraph.click();
+  await paragraph.press('ControlOrMeta+A');
+  await page.keyboard.type(savedText);
+  await paragraph.press('Tab');
+  await expect(canvas.locator('body')).toContainText(savedText);
+  const editorUrl = page.url();
+  const websiteId = editorUrl.match(/\/editor\/([^/?#]+)/)?.[1];
+  expect(websiteId, 'Editor route should include the created website ID').toBeTruthy();
+  const saveResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === `/api/websites/${websiteId}/editor`
+      && response.request().method() === 'PUT'
+  );
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok(), `Editor save API returned ${saveResponse.status()}`).toBeTruthy();
+  expect(saveResponse.request().postData() ?? '').toContain(savedText);
+  await expect(page.getByText(/^Saved /)).toBeVisible();
+
+  await page.reload();
+  await expect(page).toHaveURL(/\/landing$/);
+  await page.goto(`${builderUrl}/login`);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill('LocalOnly-12345');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+
+  const websiteAfterReload = page.locator('ui-card').filter({ hasText: templateName }).first();
+  await expect(websiteAfterReload).toBeVisible();
+  await websiteAfterReload.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.frameLocator('iframe.gjs-frame').locator('body')).toContainText(savedText);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+
+  // This freshly registered account owns only the website created above. Re-query
+  // the current dashboard card after returning from the editor, since its
+  // rendered content may have changed while editing.
+  const websiteAfterEdit = page.locator('ui-card').first();
+  await websiteAfterEdit.getByRole('button', { name: 'Rename' }).click();
+  const renamed = `SCRUM-137 ${templateName} ${Date.now()}`;
+  const renameInput = websiteAfterEdit.getByRole('textbox');
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill(renamed);
+  await websiteAfterEdit.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
+  await page.reload();
+  // Builder auth is in-memory. Re-authenticate after reload before verifying
+  // the persisted dashboard name.
+  await expect(page).toHaveURL(/\/landing$/);
+  await page.goto(`${builderUrl}/login`);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill('LocalOnly-12345');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
+});
+
+test('SCRUM-137 - admin dashboard loads metrics and a saved setting survives reload', async ({ page }) => {
+  const dashboardApiResponses: string[] = [];
+  page.on('response', async (response) => {
+    const path = new URL(response.url()).pathname;
+    if (path.endsWith('/admin/metrics') || path.endsWith('/admin/websites') || path.endsWith('/admin/settings')) {
+      const body = response.ok() ? '' : (await response.text()).slice(0, 500);
+      dashboardApiResponses.push(`${response.status()} ${path}${body ? `: ${body}` : ''}`);
+    }
+  });
+
+  await page.goto(`${adminUrl}/login`);
+  await page.getByLabel('Email').fill(adminEmail);
+  await page.getByLabel('Password').fill(adminPassword);
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
+  await expect(page.getByText('Loading metrics...', { exact: true })).toBeHidden({ timeout: 15_000 });
+  const dashboardError = page.getByRole('alert');
+  if (await dashboardError.isVisible()) {
+    throw new Error(`Admin dashboard failed to load: ${await dashboardError.innerText()}. API responses: ${dashboardApiResponses.join('; ') || 'none captured'}`);
+  }
+
+  const totalUsersLabel = page.getByText('Total Users', { exact: true });
+  await expect(totalUsersLabel).toBeVisible({ timeout: 15_000 });
+  const totalUsersValue = totalUsersLabel.locator('xpath=..').getByText(/^\d+$/);
+  await expect(totalUsersValue).toBeVisible();
+
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByText('Loading platform settings…', { exact: true })).toBeHidden({ timeout: 15_000 });
+  const settingsError = page.getByRole('alert');
+  if (await settingsError.isVisible()) {
+    throw new Error(`Admin settings failed to load: ${await settingsError.innerText()}. API responses: ${dashboardApiResponses.join('; ') || 'none captured'}`);
+  }
+  const siteName = page.getByLabel('Site Name');
+  const originalSiteName = await siteName.inputValue();
+  const updatedSiteName = `SCRUM-137 E2E ${Date.now()}`;
+
+  await siteName.fill(updatedSiteName);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Settings saved successfully!')).toBeVisible();
+
+  // Admin auth is intentionally in-memory, so a full reload requires signing in again.
+  await page.reload();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel('Email').fill(adminEmail);
+  await page.getByLabel('Password').fill(adminPassword);
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  const reloadedSiteName = page.getByLabel('Site Name');
+  await expect(reloadedSiteName).toHaveValue(updatedSiteName);
+
+  // Restore the global setting after successful assertions; the test database is disposable.
+  await reloadedSiteName.fill(originalSiteName);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Settings saved successfully!')).toBeVisible();
+});

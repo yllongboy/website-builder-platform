@@ -5,6 +5,7 @@ import {
   HostListener,
   OnDestroy,
   OnInit,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -116,6 +117,7 @@ import { EditorStateResponse, WebsiteStatus, PublishLogResponse } from '@platfor
   `,
 })
 export class EditorPage implements OnInit, OnDestroy {
+  @ViewChild(GrapesEditorComponent) private editorComponent?: GrapesEditorComponent;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly editorApi = inject(EditorApiService);
@@ -213,7 +215,8 @@ export class EditorPage implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  manualSave(): void {
+  async manualSave(): Promise<void> {
+    await this.editorComponent?.flushCurrentContent();
     this.save();
   }
 

@@ -245,18 +245,15 @@ export class GrapesEditorComponent implements AfterViewInit, OnDestroy {
       }
 
       this.editor.on('update', () => {
-        const bodyHtml = this.editor.getHtml();
-        const editorCss = this.editor.getCss() ?? '';
-        const combinedCss = [this.headStyleCss, editorCss].filter(Boolean).join('\n');
-        const cssTag = combinedCss ? `<style>${combinedCss}</style>` : '';
-        const html = this.headHtml
-          ? `<!doctype html><html><head>${this.headHtml}${cssTag}</head><body>${bodyHtml}</body></html>`
-          : bodyHtml;
-        this.contentChange.emit({
-          html,
-          css: editorCss,
-          editorState: this.editor.getProjectData() as Record<string, unknown>,
-        });
+        this.emitCurrentContent();
+      });
+
+      // GrapesJS commits inline rich-text edits to its component model when RTE
+      // editing is disabled. Publish that committed state after the async RTE
+      // disable flow finishes (the editor's generic update event can happen
+      // while the canvas still contains only the transient DOM edit).
+      this.editor.on('rte:disable', () => {
+        setTimeout(() => this.emitCurrentContent(), 0);
       });
 
       this.ready.emit(this.editor);
@@ -292,5 +289,31 @@ export class GrapesEditorComponent implements AfterViewInit, OnDestroy {
     if (this.editor) {
       this.editor.destroy();
     }
+  }
+
+  async flushCurrentContent(): Promise<void> {
+    const selected = this.editor?.getSelected();
+    const view = selected?.getView() as { disableEditing?: () => Promise<void> } | undefined;
+    if (view?.disableEditing) {
+      await view.disableEditing();
+    }
+    this.emitCurrentContent();
+  }
+
+  private emitCurrentContent(): void {
+    if (!this.editor) return;
+
+    const bodyHtml = this.editor.getHtml();
+    const editorCss = this.editor.getCss() ?? '';
+    const combinedCss = [this.headStyleCss, editorCss].filter(Boolean).join('\n');
+    const cssTag = combinedCss ? `<style>${combinedCss}</style>` : '';
+    const html = this.headHtml
+      ? `<!doctype html><html><head>${this.headHtml}${cssTag}</head><body>${bodyHtml}</body></html>`
+      : bodyHtml;
+    this.contentChange.emit({
+      html,
+      css: editorCss,
+      editorState: this.editor.getProjectData() as Record<string, unknown>,
+    });
   }
 }
