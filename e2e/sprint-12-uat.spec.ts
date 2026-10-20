@@ -76,10 +76,15 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
 
-  const websiteAfterEdit = page.locator('ui-card').filter({ hasText: templateName }).first();
+  // This freshly registered account owns only the website created above. Re-query
+  // the current dashboard card after returning from the editor, since its
+  // rendered content may have changed while editing.
+  const websiteAfterEdit = page.locator('ui-card').first();
   await websiteAfterEdit.getByRole('button', { name: 'Rename' }).click();
   const renamed = `SCRUM-137 ${templateName} ${Date.now()}`;
-  await websiteAfterEdit.getByRole('textbox').fill(renamed);
+  const renameInput = websiteAfterEdit.getByRole('textbox');
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill(renamed);
   await websiteAfterEdit.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
   await page.reload();

@@ -80,6 +80,9 @@ describe('EditorPage', () => {
 
     fixture = TestBed.createComponent(EditorPage);
     component = fixture.componentInstance;
+    (component as any).editorComponent = {
+      flushCurrentContent: jest.fn().mockResolvedValue(undefined),
+    };
     fixture.detectChanges();
   });
 
@@ -93,18 +96,18 @@ describe('EditorPage', () => {
     expect(component.isDirty).toBe(true);
   });
 
-  it('sets isDirty to false after successful save', () => {
+  it('sets isDirty to false after successful save', async () => {
     component.onContentChange({ html: '<section>x</section>', css: '', editorState: null });
 
-    component.manualSave();
+    await component.manualSave();
 
     expect(component.isDirty).toBe(false);
   });
 
-  it('sets isSaving to false after successful save', () => {
+  it('sets isSaving to false after successful save', async () => {
     component.onContentChange({ html: '<section>y</section>', css: '', editorState: null });
 
-    component.manualSave();
+    await component.manualSave();
 
     expect(component.isSaving).toBe(false);
   });
