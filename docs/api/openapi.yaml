@@ -1093,8 +1093,11 @@ components:
       allOf:
         - { $ref: '#/components/schemas/TemplateDetail' }
         - type: object
+          required: [usageCount, createdAt]
           properties:
             isActive: { type: boolean }
+            usageCount: { type: integer, format: int64, minimum: 0, description: Total number of websites referencing this template. }
+            createdAt: { type: string, format: date-time, description: Timestamp when the template was created. }
 
     TemplateUpsertRequest:
       type: object

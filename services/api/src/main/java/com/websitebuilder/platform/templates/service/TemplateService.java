@@ -11,10 +11,13 @@ import com.websitebuilder.platform.templates.dto.TemplateUpsertRequest;
 import com.websitebuilder.platform.templates.entity.TemplateEntity;
 import com.websitebuilder.platform.templates.mapper.TemplateMapper;
 import com.websitebuilder.platform.templates.repository.TemplateRepository;
+import com.websitebuilder.platform.websites.repository.WebsiteRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +27,18 @@ public class TemplateService {
     private final TemplateRepository templateRepository;
     private final CategoryRepository categoryRepository;
     private final TemplateMapper templateMapper;
+    private final WebsiteRepository websiteRepository;
 
     public TemplateService(
             TemplateRepository templateRepository,
             CategoryRepository categoryRepository,
-            TemplateMapper templateMapper
+            TemplateMapper templateMapper,
+            WebsiteRepository websiteRepository
     ) {
         this.templateRepository = templateRepository;
         this.categoryRepository = categoryRepository;
         this.templateMapper = templateMapper;
+        this.websiteRepository = websiteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -52,9 +58,15 @@ public class TemplateService {
 
     @Transactional(readOnly = true)
     public List<AdminTemplateResponse> listAdmin() {
-        return templateRepository.findAll()
-                .stream()
-                .map(templateMapper::toAdminResponse)
+        List<TemplateEntity> templates = templateRepository.findAll();
+        if (templates.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> templateIds = templates.stream().map(TemplateEntity::id).toList();
+        Map<UUID, Long> usageCounts = websiteRepository.countGroupedByTemplateId(templateIds).stream()
+                .collect(Collectors.toMap(row -> (UUID) row[0], row -> (Long) row[1]));
+        return templates.stream()
+                .map(template -> templateMapper.toAdminResponse(template, usageCounts.getOrDefault(template.id(), 0L)))
                 .toList();
     }
 
@@ -85,7 +97,7 @@ public class TemplateService {
         );
 
         templateRepository.save(entity);
-        return templateMapper.toAdminResponse(entity);
+        return templateMapper.toAdminResponse(entity, websiteRepository.countByTemplateId(entity.id()));
     }
 
     @Transactional
@@ -114,7 +126,7 @@ public class TemplateService {
         entity.setIsActive(request.isActive() != null ? request.isActive() : true);
 
         templateRepository.save(entity);
-        return templateMapper.toAdminResponse(entity);
+        return templateMapper.toAdminResponse(entity, websiteRepository.countByTemplateId(entity.id()));
     }
 
     @Transactional

@@ -111,12 +111,13 @@ import { IconComponent } from '../../../core/shared/icon.component';
         </div>
         <p class="text-xs text-foreground-muted mb-3">{{ getCategoryName(tpl.categoryId) }}</p>
         <div class="flex items-center justify-between text-xs text-foreground-muted border-t border-border/50 pt-3">
-          <span>— uses</span>
+          <span>{{ tpl.usageCount }} uses</span>
           <span [ngClass]="tpl.isPremium ? 'bg-warning/10 text-warning' : 'bg-foreground/5 text-foreground-muted'"
             class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full">
             {{ tpl.isPremium ? 'Premium' : 'Free' }}
           </span>
         </div>
+        <p class="text-[11px] text-foreground-muted mt-2">Created {{ tpl.createdAt | date:'mediumDate' }}</p>
       </div>
     </article>
   </div>
@@ -131,6 +132,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
           <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground-muted tracking-normal">Status</th>
           <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground-muted tracking-normal">Type</th>
           <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground-muted tracking-normal">Uses</th>
+          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground-muted tracking-normal">Created</th>
           <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground-muted tracking-normal">Actions</th>
         </tr>
       </thead>
@@ -164,7 +166,8 @@ import { IconComponent } from '../../../core/shared/icon.component';
               {{ tpl.isPremium ? 'Premium' : 'Free' }}
             </span>
           </td>
-          <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground-muted">—</td>
+          <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground-muted">{{ tpl.usageCount }}</td>
+          <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground-muted">{{ tpl.createdAt | date:'mediumDate' }}</td>
           <td class="px-4 py-3.5 whitespace-nowrap">
             <div class="flex items-center gap-1">
               <button type="button" (click)="onEdit(tpl)"

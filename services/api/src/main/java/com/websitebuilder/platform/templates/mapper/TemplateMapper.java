@@ -36,7 +36,7 @@ public class TemplateMapper {
         );
     }
 
-    public AdminTemplateResponse toAdminResponse(TemplateEntity entity) {
+    public AdminTemplateResponse toAdminResponse(TemplateEntity entity, long usageCount) {
         return new AdminTemplateResponse(
                 entity.id(),
                 entity.category().id(),
@@ -48,7 +48,9 @@ public class TemplateMapper {
                 entity.isActive(),
                 entity.htmlContent(),
                 entity.cssContent(),
-                entity.editorState()
+                entity.editorState(),
+                usageCount,
+                entity.createdAt()
         );
     }
 }

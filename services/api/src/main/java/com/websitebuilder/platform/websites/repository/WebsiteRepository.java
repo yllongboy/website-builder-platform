@@ -6,11 +6,18 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collection;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface WebsiteRepository extends JpaRepository<WebsiteEntity, UUID> {
+    @Query("SELECT w.template.id, COUNT(w) FROM WebsiteEntity w WHERE w.template.id IN :templateIds GROUP BY w.template.id")
+    List<Object[]> countGroupedByTemplateId(@org.springframework.data.repository.query.Param("templateIds") Collection<UUID> templateIds);
+
+    @Query("SELECT COUNT(w) FROM WebsiteEntity w WHERE w.template.id = :templateId")
+    long countByTemplateId(@org.springframework.data.repository.query.Param("templateId") UUID templateId);
+
     @Query("SELECT w.user.id, COUNT(w) FROM WebsiteEntity w GROUP BY w.user.id")
     List<Object[]> countGroupedByUserId();
 
