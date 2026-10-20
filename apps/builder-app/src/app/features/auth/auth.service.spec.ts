@@ -28,7 +28,7 @@ describe('SCRUM-126 - AuthService logout teardown', () => {
     const firstLogout = service.logout().subscribe();
     const firstRequest = httpMock.expectOne('/api/auth/logout');
     firstLogout.unsubscribe();
-    expect(firstRequest.cancelled).toBeTrue();
+    expect(firstRequest.cancelled).toBe(true);
 
     service.logout().subscribe();
     const retryRequest = httpMock.expectOne('/api/auth/logout');
