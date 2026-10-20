@@ -2,12 +2,15 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { EditorApiService } from '../data-access/editor-api.service';
+import { WebsiteApiService } from '../../websites/data-access/website-api.service';
 import { EditorPage } from './editor.page';
 
 describe('EditorPage', () => {
   let fixture: ComponentFixture<EditorPage>;
   let component: EditorPage;
   let editorApiService: jest.Mocked<Pick<EditorApiService, 'loadEditorState' | 'saveEditorState'>>;
+  let websiteApiService: jest.Mocked<Pick<WebsiteApiService,
+    'createBlankWebsite' | 'publish' | 'republish' | 'unpublish' | 'getPublishLogs'>>;
 
   beforeEach(async () => {
     editorApiService = {
@@ -34,6 +37,14 @@ describe('EditorPage', () => {
       }) as never
     );
 
+    websiteApiService = {
+      createBlankWebsite: jest.fn(),
+      publish: jest.fn(),
+      republish: jest.fn(),
+      unpublish: jest.fn(),
+      getPublishLogs: jest.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [EditorPage],
       providers: [
@@ -52,6 +63,10 @@ describe('EditorPage', () => {
         {
           provide: EditorApiService,
           useValue: editorApiService,
+        },
+        {
+          provide: WebsiteApiService,
+          useValue: websiteApiService,
         },
       ],
     })
@@ -143,6 +158,6 @@ describe('EditorPage', () => {
   });
 
   afterEach(() => {
-    component.ngOnDestroy();
+    fixture?.destroy();
   });
 });
