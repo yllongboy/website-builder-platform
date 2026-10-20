@@ -48,7 +48,7 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await expect(page).toHaveURL(/\/landing$/);
   await page.goto(`${builderUrl}/login`);
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password (min 8 characters)').fill('LocalOnly-12345');
+  await page.getByLabel('Password').fill('LocalOnly-12345');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
 
