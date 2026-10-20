@@ -24,6 +24,7 @@ import { LucideAngularModule, Search } from 'lucide-angular';
         </div>
         <input
           [id]="id || null"
+          [attr.aria-label]="label || null"
           [type]="type"
           [placeholder]="placeholder"
           [disabled]="disabled"

@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-const builderUrl = process.env.E2E_BUILDER_URL ?? 'http://127.0.0.1:4200';
-const adminUrl = process.env.E2E_ADMIN_URL ?? 'http://127.0.0.1:4201';
+const builderUrl = 'http://127.0.0.1:4200';
+const adminUrl = 'http://127.0.0.1:4201';
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@example.com';
 const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? 'password';
 
-test('SCRUM-137 - register, create a template website, rename it, and verify it persists', async ({ page }) => {
+test('SCRUM-137 - register, create a template website, edit and save content, and verify persistence', async ({ page }) => {
   const email = `scrum137-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
   await page.goto(`${builderUrl}/register`);
   await page.getByLabel('First name (optional)').fill('Browser');
@@ -30,12 +30,32 @@ test('SCRUM-137 - register, create a template website, rename it, and verify it 
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
   const website = page.locator('ui-card').filter({ hasText: templateName }).first();
   await expect(website).toBeVisible();
-  await website.getByTitle('Rename').click();
-  const renamed = `SCRUM-137 ${templateName} ${Date.now()}`;
-  await website.getByRole('textbox').fill(renamed);
-  await website.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
+  await website.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
 
+  const canvas = page.frameLocator('iframe.gjs-frame');
+  const paragraph = canvas.locator('body p').first();
+  await expect(paragraph).toBeVisible();
+  await paragraph.dblclick();
+  const editableText = canvas.locator('[contenteditable="true"]').first();
+  const savedText = `SCRUM-137 browser edit ${Date.now()}`;
+  await editableText.fill(savedText);
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText(/^Saved /)).toBeVisible();
+
+  const editorUrl = page.url();
+  await page.reload();
+  await expect(page).toHaveURL(editorUrl);
+  await expect(canvas.locator('body')).toContainText(savedText);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+
+  const websiteAfterEdit = page.locator('ui-card').filter({ hasText: templateName }).first();
+  await websiteAfterEdit.getByRole('button', { name: 'Rename' }).click();
+  const renamed = `SCRUM-137 ${templateName} ${Date.now()}`;
+  await websiteAfterEdit.getByRole('textbox').fill(renamed);
+  await websiteAfterEdit.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
 });
@@ -53,7 +73,7 @@ test('SCRUM-137 - admin dashboard loads metrics and a saved setting survives rel
   await expect(totalUsersValue).toBeVisible();
 
   await page.getByRole('link', { name: 'Settings' }).click();
-  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   const siteName = page.getByLabel('Site Name');
   const originalSiteName = await siteName.inputValue();
   const updatedSiteName = `SCRUM-137 E2E ${Date.now()}`;

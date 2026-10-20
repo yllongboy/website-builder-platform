@@ -57,19 +57,14 @@ jobs:
           POSTGRES_USER: website_builder
           POSTGRES_PASSWORD: website_builder_e2e_password
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd "pg_isready -U website_builder -d website_builder_e2e"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
     env:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/website_builder_e2e
-      SPRING_DATASOURCE_USERNAME: website_builder
-      SPRING_DATASOURCE_PASSWORD: website_builder_e2e_password
-      APP_JWT_SECRET: local-e2e-jwt-secret-must-be-at-least-32-characters
-      APP_CORS_ALLOWED_ORIGINS: http://127.0.0.1:4200,http://127.0.0.1:4201
+      E2E_USE_DISPOSABLE_ENV: "true"
       E2E_ADMIN_EMAIL: admin@example.com
       E2E_ADMIN_PASSWORD: password
       CI: true
@@ -100,19 +95,6 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Start API against disposable E2E database
-        run: |
-          nohup mvn -f services/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev > /tmp/website-builder-api.log 2>&1 &
-          echo $! > /tmp/website-builder-api.pid
-          for attempt in $(seq 1 90); do
-            if curl --silent --fail http://127.0.0.1:8080/api/templates > /dev/null; then
-              exit 0
-            fi
-            sleep 2
-          done
-          cat /tmp/website-builder-api.log
-          exit 1
-
       - name: Run browser journeys
         run: pnpm run test:e2e
 
@@ -124,7 +106,6 @@ jobs:
           path: |
             test-results/
             playwright-report/
-            /tmp/website-builder-api.log
           if-no-files-found: warn
           retention-days: 7
 

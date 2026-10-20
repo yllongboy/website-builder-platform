@@ -1,0 +1,40 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5433/website_builder_e2e
+    username: website_builder
+    password: website_builder_e2e_password
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+
+app:
+  jwt:
+    secret: e2e-only-jwt-secret-must-not-be-used-outside-local-tests
+    expiration-ms: 86400000
+  cors:
+    allowed-origins: http://127.0.0.1:4200,http://127.0.0.1:4201
+
+cloudflare:
+  r2:
+    account-id: e2e-placeholder
+    access-key-id: e2e-placeholder
+    access-key-secret: e2e-placeholder
+    bucket-name: e2e-placeholder
+    public-url-base: http://127.0.0.1:8081/disabled
+
+stripe:
+  secret-key: sk_test_e2e_placeholder
+  webhook-secret: whsec_e2e_placeholder
+  success-url: http://127.0.0.1:4200/billing?success=true
+  cancel-url: http://127.0.0.1:4200/billing?canceled=true
+  portal-return-url: http://127.0.0.1:4200/billing
+  plans:
+    pro:
+      price-id: price_e2e_placeholder

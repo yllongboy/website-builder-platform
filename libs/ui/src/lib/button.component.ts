@@ -11,6 +11,8 @@ import { LucideAngularModule } from 'lucide-angular';
     <button
       [class]="'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ' + variantClasses + ' ' + sizeClasses"
       [disabled]="isLoading || disabled"
+      [attr.aria-label]="ariaLabel || title || null"
+      [attr.title]="title || null"
     >
       <ng-container *ngIf="isLoading; else content">
         <lucide-icon name="loader-2" class="mr-2 h-4 w-4 animate-spin"></lucide-icon>
@@ -27,6 +29,8 @@ export class ButtonComponent {
   @Input() size: 'sm' | 'md' | 'lg' | 'icon' = 'md';
   @Input() isLoading = false;
   @Input() disabled = false;
+  @Input() title = '';
+  @Input('aria-label') ariaLabel = '';
 
   get variantClasses(): string {
     switch (this.variant) {

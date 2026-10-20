@@ -1,12 +1,16 @@
 # Browser end-to-end tests
 
-The Playwright suite launches Chromium and exercises the rendered Builder and Admin applications against a local Spring API and a disposable PostgreSQL database. It registers a uniquely named Builder user, creates a site from a free template, renames it, and verifies the name after reload. It also signs into Admin, checks that the dashboard metrics have loaded, updates the platform site name, checks it after reload, and restores the original value.
+The Playwright suite opens Chromium and clicks through the rendered Builder and Admin apps. It registers a uniquely named Builder user, creates a site from a free template, edits text in the GrapesJS canvas, saves it, reloads the editor to verify the saved content, and renames the site. It also signs into Admin, checks that dashboard metrics have loaded, updates the platform site name, checks it after reload, and restores the original value.
 
-The tests do not publish sites, call Cloudflare/R2, or create Stripe charges. The local compose file stores PostgreSQL data in a temporary filesystem and uses port `5433`; it does not use the regular development database or its `5432` port.
+## Isolation and safety
+
+The suite is opt-in and refuses to load unless `E2E_USE_DISPOSABLE_ENV=true` is set. Playwright launches the API with the dedicated `e2e` Spring profile on port `8081`, and launches fresh Builder/Admin servers on `4200` and `4201`. It never reuses servers already listening on those ports. The apps' E2E proxy target is fixed to the E2E API at `127.0.0.1:8081`; test app URL overrides are not supported.
+
+The `e2e` profile connects only to `127.0.0.1:5433/website_builder_e2e`. An API startup guard verifies the actual JDBC URL and database username and fails startup for any other database. The suite therefore cannot point at the normal development API on port `8080` or its database on port `5432`. The E2E profile contains only local placeholder credentials and does not call Stripe, Cloudflare/R2, or publish websites.
 
 ## Local run
 
-Use three terminal windows from the repository root. Prerequisites are Node.js 20, pnpm 10.8.1 through Corepack, Java 21, and Docker Compose.
+Prerequisites: Node.js 20, pnpm 10.8.1 via Corepack, Java 21, and Docker Compose.
 
 1. Install dependencies and Chromium once:
 
@@ -15,46 +19,32 @@ Use three terminal windows from the repository root. Prerequisites are Node.js 2
    corepack pnpm run test:e2e:install
    ```
 
-2. Start the isolated test database:
+2. Start the dedicated disposable database. It uses a temporary filesystem and host port `5433`:
 
    ```sh
    docker compose -p website-builder-e2e -f infra/docker/docker-compose.e2e.yml up -d --wait
    ```
 
-3. Start the API with the development profile, pointing it at the isolated database:
+3. In another terminal, run the suite. The command starts the guarded E2E API and both Angular apps, then stops those servers when finished:
 
    ```sh
-   SPRING_PROFILES_ACTIVE=dev \
-   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/website_builder_e2e \
-   SPRING_DATASOURCE_USERNAME=website_builder \
-   SPRING_DATASOURCE_PASSWORD=website_builder_e2e_password \
-   APP_JWT_SECRET=local-e2e-jwt-secret-must-be-at-least-32-characters \
-   APP_CORS_ALLOWED_ORIGINS=http://127.0.0.1:4200,http://127.0.0.1:4201 \
-   mvn -f services/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev
+   E2E_USE_DISPOSABLE_ENV=true corepack pnpm run test:e2e
    ```
 
-   Keep this process running. Flyway creates the schema and applies the development fixtures on the empty test database. The seeded Admin login is `admin@example.com` / `password`; V6 migration sets this final password after the initial V5 seed.
-
-4. In another terminal, run the browser tests. Playwright starts both Angular dev servers automatically and shuts them down when it finishes:
+   To open Chromium visibly as it clicks through the same flows:
 
    ```sh
-   corepack pnpm run test:e2e
+   E2E_USE_DISPOSABLE_ENV=true corepack pnpm run test:e2e:headed
    ```
 
-   To open Chromium visibly while it clicks through the same flows, use:
+4. Remove the disposable database after the tests:
 
    ```sh
-   corepack pnpm run test:e2e:headed
+   docker compose -p website-builder-e2e -f infra/docker/docker-compose.e2e.yml down -v
    ```
 
-When finished, stop the API with Ctrl+C and remove the disposable database:
-
-```sh
-docker compose -p website-builder-e2e -f infra/docker/docker-compose.e2e.yml down -v
-```
-
-The browser suite is serial because the Admin scenario temporarily updates a global setting and restores its previous value. Unique registration addresses prevent collisions between repeat runs. Tests support `E2E_BUILDER_URL`, `E2E_ADMIN_URL`, `E2E_ADMIN_EMAIL`, and `E2E_ADMIN_PASSWORD` overrides.
+The seeded Admin login is `admin@example.com` / `password`; migration V6 sets this final password after the initial V5 seed. `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` can select another identity in a disposable database. App URLs and the E2E API target are deliberately fixed to loopback.
 
 ## CI
 
-The `Browser E2E` job starts an ephemeral PostgreSQL service, applies Flyway migrations through the local API, installs Chromium, and runs `pnpm run test:e2e`. On failure it uploads Playwright traces, screenshots, the HTML report, and the API startup log as the `browser-e2e-failure-artifacts` artifact.
+The `Browser E2E` job provisions an ephemeral PostgreSQL 16 service on port `5433`, installs Chromium, and runs the same opted-in suite. Playwright starts the E2E-profile API and fresh frontend servers. On failure CI uploads Playwright traces, screenshots, the HTML report, and available server logs as `browser-e2e-failure-artifacts`.
