@@ -49,7 +49,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
         <!-- Name + sub-line -->
         <div class="flex-1 min-w-0">
           <p class="text-[13px] font-semibold text-foreground">{{ cat.name }}</p>
-          <p class="text-xs text-foreground-muted">/{{ cat.slug }} · &mdash; templates</p>
+          <p class="text-xs text-foreground-muted">/{{ cat.slug }} · {{ cat.templatesCount }} {{ cat.templatesCount === 1 ? 'template' : 'templates' }}</p>
         </div>
         <!-- Active/Inactive badge -->
         <span [ngClass]="cat.isActive ? 'bg-success/10 text-success' : 'bg-foreground/5 text-foreground-muted'"

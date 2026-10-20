@@ -1,3 +1,6 @@
 import { CategoryResponse } from './category-response';
 
-export interface AdminCategoryResponse extends CategoryResponse { isActive: boolean; }
+export interface AdminCategoryResponse extends CategoryResponse {
+  isActive: boolean;
+  templatesCount: number;
+}

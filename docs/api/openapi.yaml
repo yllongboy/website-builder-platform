@@ -1053,8 +1053,10 @@ components:
       allOf:
         - { $ref: '#/components/schemas/CategoryResponse' }
         - type: object
+          required: [templatesCount]
           properties:
             isActive: { type: boolean }
+            templatesCount: { type: integer, minimum: 0 }
 
     CategoryUpsertRequest:
       type: object
