@@ -15,7 +15,8 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await page.getByRole('button', { name: 'Register' }).click();
 
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
-  await page.getByRole('button', { name: 'Create Website' }).click();
+  const dashboardActions = page.getByRole('heading', { name: 'My Websites' }).locator('xpath=../..');
+  await dashboardActions.getByRole('button', { name: 'Create Website' }).click();
   await expect(page.getByRole('heading', { name: 'Templates', exact: true })).toBeVisible();
 
   const firstFreeTemplate = page
@@ -64,7 +65,7 @@ test('SCRUM-137 - admin dashboard loads metrics and a saved setting survives rel
   const dashboardApiResponses: string[] = [];
   page.on('response', async (response) => {
     const path = new URL(response.url()).pathname;
-    if (path.endsWith('/admin/metrics') || path.endsWith('/admin/websites')) {
+    if (path.endsWith('/admin/metrics') || path.endsWith('/admin/websites') || path.endsWith('/admin/settings')) {
       const body = response.ok() ? '' : (await response.text()).slice(0, 500);
       dashboardApiResponses.push(`${response.status()} ${path}${body ? `: ${body}` : ''}`);
     }
@@ -89,22 +90,33 @@ test('SCRUM-137 - admin dashboard loads metrics and a saved setting survives rel
 
   await page.getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByText('Loading platform settings…', { exact: true })).toBeHidden({ timeout: 15_000 });
+  const settingsError = page.getByRole('alert');
+  if (await settingsError.isVisible()) {
+    throw new Error(`Admin settings failed to load: ${await settingsError.innerText()}. API responses: ${dashboardApiResponses.join('; ') || 'none captured'}`);
+  }
   const siteName = page.getByLabel('Site Name');
   const originalSiteName = await siteName.inputValue();
   const updatedSiteName = `SCRUM-137 E2E ${Date.now()}`;
 
-  try {
-    await siteName.fill(updatedSiteName);
-    await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page.getByText('Settings saved successfully!')).toBeVisible();
-    await page.reload();
-    await expect(page.getByLabel('Site Name')).toHaveValue(updatedSiteName);
-  } finally {
-    await page.goto(`${adminUrl}/settings`);
-    const restoreInput = page.getByLabel('Site Name');
-    await expect(restoreInput).toBeVisible();
-    await restoreInput.fill(originalSiteName);
-    await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page.getByText('Settings saved successfully!')).toBeVisible();
-  }
+  await siteName.fill(updatedSiteName);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Settings saved successfully!')).toBeVisible();
+
+  // Admin auth is intentionally in-memory, so a full reload requires signing in again.
+  await page.reload();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel('Email').fill(adminEmail);
+  await page.getByLabel('Password').fill(adminPassword);
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  const reloadedSiteName = page.getByLabel('Site Name');
+  await expect(reloadedSiteName).toHaveValue(updatedSiteName);
+
+  // Restore the global setting after successful assertions; the test database is disposable.
+  await reloadedSiteName.fill(originalSiteName);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Settings saved successfully!')).toBeVisible();
 });
