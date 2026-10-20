@@ -17,12 +17,13 @@ import { LucideAngularModule, Search } from 'lucide-angular';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="w-full">
-      <label *ngIf="label" class="mb-2 block text-sm font-medium">{{label}}</label>
+      <label *ngIf="label" [attr.for]="id || null" class="mb-2 block text-sm font-medium">{{label}}</label>
       <div class="relative">
         <div *ngIf="showSearch || isSearch" class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
           <lucide-icon [img]="Search" [size]="16"></lucide-icon>
         </div>
         <input
+          [id]="id || null"
           [type]="type"
           [placeholder]="placeholder"
           [disabled]="disabled"
@@ -38,6 +39,7 @@ import { LucideAngularModule, Search } from 'lucide-angular';
   `
 })
 export class InputComponent implements ControlValueAccessor {
+  @Input() id = '';
   @Input() type = 'text';
   @Input() placeholder = '';
   @Input() value = '';

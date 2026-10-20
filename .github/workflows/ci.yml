@@ -46,6 +46,88 @@ jobs:
       - name: Verify Sprint 12 UAT automation command and coverage map
         run: pnpm run test:sprint12-uat
 
+  browser-e2e:
+    name: Browser E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: website_builder_e2e
+          POSTGRES_USER: website_builder
+          POSTGRES_PASSWORD: website_builder_e2e_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U website_builder -d website_builder_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/website_builder_e2e
+      SPRING_DATASOURCE_USERNAME: website_builder
+      SPRING_DATASOURCE_PASSWORD: website_builder_e2e_password
+      APP_JWT_SECRET: local-e2e-jwt-secret-must-be-at-least-32-characters
+      APP_CORS_ALLOWED_ORIGINS: http://127.0.0.1:4200,http://127.0.0.1:4201
+      E2E_ADMIN_EMAIL: admin@example.com
+      E2E_ADMIN_PASSWORD: password
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.8.1
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start API against disposable E2E database
+        run: |
+          nohup mvn -f services/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev > /tmp/website-builder-api.log 2>&1 &
+          echo $! > /tmp/website-builder-api.pid
+          for attempt in $(seq 1 90); do
+            if curl --silent --fail http://127.0.0.1:8080/api/templates > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/website-builder-api.log
+          exit 1
+
+      - name: Run browser journeys
+        run: pnpm run test:e2e
+
+      - name: Upload browser artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+            /tmp/website-builder-api.log
+          if-no-files-found: warn
+          retention-days: 7
+
   backend-checks:
     name: Backend Build and Tests
     runs-on: ubuntu-latest
