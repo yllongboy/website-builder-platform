@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, of, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, tap, of, catchError, finalize } from 'rxjs';
 
 export interface AuthResponse {
   accessToken: string;
@@ -78,6 +78,9 @@ export class AuthService {
       tap(() => {
         this.tokenSubject.next(null);
         this.currentUserSubject.next(null);
+        this.isLoggingOut = false;
+      }),
+      finalize(() => {
         this.isLoggingOut = false;
       })
     );
