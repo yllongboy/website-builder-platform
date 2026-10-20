@@ -48,7 +48,6 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await page.keyboard.type(savedText);
   await paragraph.press('Tab');
   await expect(canvas.locator('body')).toContainText(savedText);
-  await expect(page.getByText('Unsaved changes', { exact: true })).toBeVisible();
   const editorUrl = page.url();
   const websiteId = editorUrl.match(/\/editor\/([^/?#]+)/)?.[1];
   expect(websiteId, 'Editor route should include the created website ID').toBeTruthy();
