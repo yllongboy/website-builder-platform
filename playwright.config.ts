@@ -20,7 +20,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: 'corepack pnpm exec nx serve builder-app --host 127.0.0.1',
+      command: 'corepack pnpm exec nx serve builder-app --host 127.0.0.1 --port 4200',
       url: builderUrl,
       reuseExistingServer: !ci,
       timeout: 120_000,
@@ -28,7 +28,7 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'corepack pnpm exec nx serve admin-app --host 127.0.0.1',
+      command: 'corepack pnpm exec nx serve admin-app --host 127.0.0.1 --port 4201',
       url: adminUrl,
       reuseExistingServer: !ci,
       timeout: 120_000,
