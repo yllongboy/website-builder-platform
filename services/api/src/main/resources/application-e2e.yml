@@ -27,7 +27,7 @@ cloudflare:
     access-key-id: e2e-placeholder
     access-key-secret: e2e-placeholder
     bucket-name: e2e-placeholder
-    public-url-base: http://127.0.0.1:8081/disabled
+    public-url-base: https://e2e-placeholder.invalid/disabled
 
 stripe:
   secret-key: sk_test_e2e_placeholder
