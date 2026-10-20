@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websitebuilder.platform.assets.repository.AssetRepository;
 import com.websitebuilder.platform.admin.activity.repository.ActivityEventRepository;
 import com.websitebuilder.platform.admin.activity.service.ActivityEventService;
+import com.websitebuilder.platform.admin.settings.repository.PlatformSettingsRepository;
 import com.websitebuilder.platform.billing.repository.PaidInvoiceSnapshotRepository;
 import com.websitebuilder.platform.billing.repository.StripeEventRepository;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
@@ -102,6 +103,9 @@ class JwtRevocationIntegrationTest {
 
     @MockBean
     private ActivityEventService activityEventService;
+
+    @MockBean
+    private PlatformSettingsRepository platformSettingsRepository;
 
     @Test
     void revokedToken_cannotAccessProtectedEndpoint() throws Exception {
