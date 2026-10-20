@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "ignorePatterns": ["**/dist/**", "**/coverage/**"],
+  "overrides": [
+    {
+      "files": ["**/*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint", "@angular-eslint"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@angular-eslint/recommended"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@angular-eslint/component-class-suffix": [
+          "error",
+          { "suffixes": ["Component", "Page"] }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.html"],
+      "parser": "@angular-eslint/template-parser",
+      "plugins": ["@angular-eslint/template"],
+      "extends": ["plugin:@angular-eslint/template/recommended"]
+    }
+  ]
+}

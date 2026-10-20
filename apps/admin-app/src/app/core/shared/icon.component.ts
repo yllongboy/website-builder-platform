@@ -55,7 +55,7 @@ export class IconComponent {
   get svg(): SafeHtml {
     const body = paths[this.name] ?? paths['zap'];
     const safeSize = Math.max(1, Math.floor(Math.abs(Number(this.size)))) || 16;
-    const safeClass = String(this.className).replace(/[^a-zA-Z0-9\s_\-\/\[\]:.]/g, '');
+    const safeClass = String(this.className).replace(/[^a-zA-Z0-9\s_/[\]:.-]/g, '');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${safeSize}" height="${safeSize}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${safeClass}">${body}</svg>`;
     return this.sanitizer.bypassSecurityTrustHtml(svg);
   }

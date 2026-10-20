@@ -96,7 +96,7 @@ export class AdminLoginPage {
         }
         this.router.navigateByUrl('/');
       },
-      error: (err) => {
+      error: () => {
         this.error.set('Login failed. Please try again.');
         this.loading.set(false);
       },

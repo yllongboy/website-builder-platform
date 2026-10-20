@@ -7,7 +7,7 @@ import { AdminSettingsPage } from './admin-settings.page';
 describe('AdminSettingsPage', () => {
   let fixture: ComponentFixture<AdminSettingsPage>;
   let component: AdminSettingsPage;
-  let settingsApi: jasmine.SpyObj<AdminSettingsApiService>;
+  let settingsApi: jest.Mocked<Pick<AdminSettingsApiService, 'getSettings' | 'updateSettings'>>;
 
   const settings: AdminSettingsResponse = {
     siteName: 'SCRUM Studio',
@@ -27,12 +27,12 @@ describe('AdminSettingsPage', () => {
   };
 
   beforeEach(async () => {
-    settingsApi = jasmine.createSpyObj<AdminSettingsApiService>('AdminSettingsApiService', [
-      'getSettings',
-      'updateSettings',
-    ]);
-    settingsApi.getSettings.and.returnValue(of(settings));
-    settingsApi.updateSettings.and.returnValue(of(settings));
+    settingsApi = {
+      getSettings: jest.fn(),
+      updateSettings: jest.fn(),
+    };
+    settingsApi.getSettings.mockReturnValue(of(settings));
+    settingsApi.updateSettings.mockReturnValue(of(settings));
 
     await TestBed.configureTestingModule({
       imports: [AdminSettingsPage],
@@ -51,15 +51,15 @@ describe('AdminSettingsPage', () => {
     expect(component.siteName).toBe(settings.siteName);
     expect(component.siteDescription).toBe(settings.siteDescription);
     expect(component.supportEmail).toBe(settings.supportEmail);
-    expect(component.emailNotifications).toBeFalse();
-    expect(component.newUserNotifications).toBeTrue();
-    expect(component.paymentNotifications).toBeFalse();
-    expect(component.weeklyReport).toBeTrue();
-    expect(component.twoFactorRequired).toBeTrue();
+    expect(component.emailNotifications).toBe(false);
+    expect(component.newUserNotifications).toBe(true);
+    expect(component.paymentNotifications).toBe(false);
+    expect(component.weeklyReport).toBe(true);
+    expect(component.twoFactorRequired).toBe(true);
     expect(component.sessionTimeout).toBe(12);
     expect(component.passwordMinLength).toBe(14);
-    expect(component.settingsLoaded).toBeTrue();
-    expect(component.loading).toBeFalse();
+    expect(component.settingsLoaded).toBe(true);
+    expect(component.loading).toBe(false);
   });
 
   it('submits current values and shows save success', () => {
@@ -93,29 +93,32 @@ describe('AdminSettingsPage', () => {
 
     component.save();
 
-    expect(settingsApi.updateSettings).toHaveBeenCalledOnceWith(expected);
-    expect(component.saving).toBeFalse();
-    expect(component.savedSuccess).toBeTrue();
+    expect(settingsApi.updateSettings).toHaveBeenCalledTimes(1);
+    expect(settingsApi.updateSettings).toHaveBeenCalledWith(expected);
+    expect(component.saving).toBe(false);
+    expect(component.savedSuccess).toBe(true);
     expect(component.saveError).toBeUndefined();
   });
 
   it('reports load authorization errors and keeps settings unavailable', () => {
-    settingsApi.getSettings.and.returnValue(throwError(() => ({ status: 403 })));
-    component.loadSettings();
+    settingsApi.getSettings.mockReturnValue(throwError(() => ({ status: 403 })));
+    const failedFixture = TestBed.createComponent(AdminSettingsPage);
+    failedFixture.detectChanges();
 
-    expect(component.loading).toBeFalse();
-    expect(component.settingsLoaded).toBeFalse();
-    expect(component.loadError).toContain('permission');
+    expect(failedFixture.componentInstance.loading).toBe(false);
+    expect(failedFixture.componentInstance.settingsLoaded).toBe(false);
+    expect(failedFixture.componentInstance.loadError).toContain('permission');
+    failedFixture.destroy();
   });
 
   it('reports save validation errors and allows another save attempt', () => {
-    settingsApi.updateSettings.and.returnValue(
+    settingsApi.updateSettings.mockReturnValue(
       throwError(() => ({ status: 422, error: { message: 'Password length is invalid.' } }))
     );
     component.save();
 
-    expect(component.saving).toBeFalse();
-    expect(component.savedSuccess).toBeFalse();
+    expect(component.saving).toBe(false);
+    expect(component.savedSuccess).toBe(false);
     expect(component.saveError).toBe('Password length is invalid.');
   });
 });
