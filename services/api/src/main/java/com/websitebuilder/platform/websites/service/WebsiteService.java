@@ -201,7 +201,7 @@ public class WebsiteService {
 
     @Transactional(readOnly = true)
     public List<AdminWebsiteResponse> listAdmin() {
-        return websiteRepository.findAll()
+        return websiteRepository.findAllWithOwnerAndTemplate()
                 .stream()
                 .map(websiteMapper::toAdminResponse)
                 .toList();

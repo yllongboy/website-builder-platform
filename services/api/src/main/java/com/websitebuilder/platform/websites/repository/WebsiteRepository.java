@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -18,6 +19,11 @@ public interface WebsiteRepository extends JpaRepository<WebsiteEntity, UUID> {
     long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(Instant startInclusive, Instant endExclusive);
 
     List<WebsiteEntity> findByUserId(UUID userId);
+
+    @EntityGraph(attributePaths = {"user", "template"})
+    @Query("SELECT w FROM WebsiteEntity w")
+    List<WebsiteEntity> findAllWithOwnerAndTemplate();
+
     Optional<WebsiteEntity> findByIdAndUserId(UUID id, UUID userId);
     boolean existsByUserIdAndSlug(UUID userId, String slug);
 }

@@ -59,6 +59,7 @@ class WebsiteServiceAdminTest {
         when(websiteMapper.toAdminResponse(website)).thenReturn(new AdminWebsiteResponse(
                 website.id(), website.user().email(), website.name(),
                 com.websitebuilder.platform.websites.dto.WebsiteStatus.ARCHIVED,
+                null, null, 0, website.createdAt(),
                 website.publishedUrl(), website.updatedAt()
         ));
 
@@ -81,6 +82,7 @@ class WebsiteServiceAdminTest {
         when(websiteMapper.toAdminResponse(website)).thenReturn(new AdminWebsiteResponse(
                 website.id(), website.user().email(), website.name(),
                 com.websitebuilder.platform.websites.dto.WebsiteStatus.DRAFT,
+                null, null, 0, website.createdAt(),
                 website.publishedUrl(), website.updatedAt()
         ));
 
