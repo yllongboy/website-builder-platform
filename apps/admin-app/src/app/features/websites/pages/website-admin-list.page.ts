@@ -72,16 +72,16 @@ import { IconComponent } from '../../../core/shared/icon.component';
                   </div>
                   <div>
                     <p class="text-[13px] font-medium text-foreground">{{ site.name }}</p>
-                    <p class="text-xs text-foreground-muted">—</p>
+                    <p class="text-xs text-foreground-muted">{{ site.templateName || '—' }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground">{{ site.ownerEmail }}</td>
+              <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground">{{ site.ownerName || site.ownerEmail }}</td>
               <td class="px-4 py-3.5 whitespace-nowrap">
                 <app-status-badge [status]="site.status" type="website"></app-status-badge>
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground">
-                <span class="text-foreground-muted">—</span>
+                <span title="Page views are not tracked until analytics is available">Not tracked</span>
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground-muted">{{ site.updatedAt | date:'mediumDate' }}</td>
               <td class="px-4 py-3.5 whitespace-nowrap">
@@ -125,7 +125,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
               </div>
               <div>
                 <p class="text-base font-semibold text-foreground">{{ selectedWebsite?.name }}</p>
-                <p class="text-sm text-foreground-muted">by {{ selectedWebsite?.ownerEmail }}</p>
+                <p class="text-sm text-foreground-muted">by {{ selectedWebsite?.ownerName || selectedWebsite?.ownerEmail }}</p>
               </div>
             </div>
             
@@ -136,15 +136,19 @@ import { IconComponent } from '../../../core/shared/icon.component';
               </div>
               <div>
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Template</p>
-                <p class="text-[13px] text-foreground">—</p>
+                <p class="text-[13px] text-foreground">{{ selectedWebsite?.templateName || '—' }}</p>
               </div>
               <div>
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Page Views</p>
-                <p class="text-[13px] text-foreground">—</p>
+                <p class="text-[13px] text-foreground" title="Page views are not tracked until analytics is available">Not tracked</p>
               </div>
               <div>
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Last Updated</p>
                 <p class="text-[13px] text-foreground">{{ selectedWebsite?.updatedAt | date:'mediumDate' }}</p>
+              </div>
+              <div>
+                <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Created</p>
+                <p class="text-[13px] text-foreground">{{ selectedWebsite?.createdAt | date:'mediumDate' }}</p>
               </div>
               <div class="col-span-2">
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Published URL</p>

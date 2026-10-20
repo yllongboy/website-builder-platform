@@ -27,14 +27,30 @@ public class WebsiteMapper {
     }
 
     public AdminWebsiteResponse toAdminResponse(WebsiteEntity entity) {
+        String firstName = trimmedOrNull(entity.user().firstName());
+        String lastName = trimmedOrNull(entity.user().lastName());
+        String ownerName = firstName == null ? lastName
+                : lastName == null ? firstName : firstName + " " + lastName;
         return new AdminWebsiteResponse(
                 entity.id(),
                 entity.user().email(),
                 entity.name(),
                 WebsiteStatus.valueOf(entity.status().name()),
+                entity.template() == null ? null : entity.template().name(),
+                ownerName,
+                0,
+                entity.createdAt(),
                 entity.publishedUrl(),
                 entity.updatedAt()
         );
+    }
+
+    private static String trimmedOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public EditorStateResponse toEditorStateResponse(WebsiteEntity website, WebsiteVersionEntity version) {
