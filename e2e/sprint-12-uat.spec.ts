@@ -38,10 +38,21 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   const paragraph = canvas.locator('body p').first();
   await expect(paragraph).toBeVisible();
   await paragraph.dblclick();
-  const editableText = canvas.locator('[contenteditable="true"]').first();
+  await expect(paragraph).toHaveAttribute('contenteditable', 'true');
   const savedText = `SCRUM-137 browser edit ${Date.now()}`;
-  await editableText.fill(savedText);
+  await paragraph.fill(savedText);
+  await expect(canvas.locator('body')).toContainText(savedText);
+  const editorUrl = page.url();
+  const websiteId = editorUrl.match(/\/editor\/([^/?#]+)/)?.[1];
+  expect(websiteId, 'Editor route should include the created website ID').toBeTruthy();
+  const saveResponsePromise = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === `/api/websites/${websiteId}/editor`
+      && response.request().method() === 'PUT'
+  );
   await page.getByRole('button', { name: 'Save', exact: true }).click();
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok(), `Editor save API returned ${saveResponse.status()}`).toBeTruthy();
+  expect(saveResponse.request().postData() ?? '').toContain(savedText);
   await expect(page.getByText(/^Saved /)).toBeVisible();
 
   await page.reload();
