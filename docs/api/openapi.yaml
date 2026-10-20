@@ -500,6 +500,44 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /admin/settings:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get platform settings
+      description: Returns persisted platform settings. Requires ROLE_ADMIN.
+      responses:
+        '200':
+          description: Current platform settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminSettingsResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update platform settings
+      description: >-
+        Persists the supplied platform settings fields. Omitted fields are left
+        unchanged. Requires ROLE_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAdminSettingsRequest' }
+      responses:
+        '200':
+          description: Updated platform settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminSettingsResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /admin/metrics/timeseries:
     get:
       tags: [Admin]
@@ -1484,6 +1522,84 @@ components:
         status: { $ref: '#/components/schemas/WebsiteStatus' }
         publishedUrl: { type: string, format: uri, nullable: true }
         updatedAt: { type: string, format: date-time }
+
+    AdminSettingsResponse:
+      type: object
+      additionalProperties: false
+      required: [siteName, siteDescription, supportEmail, notifications, security]
+      properties:
+        siteName: { type: string, minLength: 1, maxLength: 100 }
+        siteDescription: { type: string, maxLength: 500 }
+        supportEmail: { type: string, format: email, maxLength: 254 }
+        notifications:
+          $ref: '#/components/schemas/AdminNotificationSettings'
+        security:
+          $ref: '#/components/schemas/AdminSecuritySettings'
+
+    UpdateAdminSettingsRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        siteName: { type: string, minLength: 1, maxLength: 100 }
+        siteDescription: { type: string, maxLength: 500 }
+        supportEmail: { type: string, format: email, maxLength: 254 }
+        notifications:
+          $ref: '#/components/schemas/UpdateAdminNotificationSettings'
+        security:
+          $ref: '#/components/schemas/UpdateAdminSecuritySettings'
+
+    AdminNotificationSettings:
+      type: object
+      additionalProperties: false
+      required: [emailNotifications, newUserNotifications, paymentNotifications, weeklyReport]
+      properties:
+        emailNotifications: { type: boolean }
+        newUserNotifications: { type: boolean }
+        paymentNotifications: { type: boolean }
+        weeklyReport: { type: boolean }
+
+    UpdateAdminNotificationSettings:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        emailNotifications: { type: boolean }
+        newUserNotifications: { type: boolean }
+        paymentNotifications: { type: boolean }
+        weeklyReport: { type: boolean }
+
+    AdminSecuritySettings:
+      type: object
+      additionalProperties: false
+      required: [twoFactorRequired, sessionTimeout, passwordMinLength]
+      properties:
+        twoFactorRequired: { type: boolean }
+        sessionTimeout:
+          type: integer
+          minimum: 1
+          maximum: 720
+          description: Session timeout in hours.
+        passwordMinLength:
+          type: integer
+          minimum: 8
+          maximum: 128
+
+    UpdateAdminSecuritySettings:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        twoFactorRequired: { type: boolean }
+        sessionTimeout:
+          type: integer
+          minimum: 1
+          maximum: 720
+          description: Session timeout in hours.
+        passwordMinLength:
+          type: integer
+          minimum: 8
+          maximum: 128
 
     SuccessResponse:
       type: object
