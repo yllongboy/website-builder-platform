@@ -48,4 +48,4 @@ GitHub Actions runs all four commands. The discovery smoke checks that each tick
 | SCRUM-110 | Metrics sums current calendar-month USD invoice cents and returns zero when there are no invoices. |
 | SCRUM-111 | Time series emits six monthly buckets, correct user counts, zero-filled revenue gaps, and rejects unsupported periods. |
 | SCRUM-112 | Activity endpoint handles an empty feed, returns newest 20 with stable ties, enforces admin access, persists across restart, and supports required event types. |
-| SCRUM-135 | Node test verifies CI invokes the documented admin and builder test commands, Maven suite, and ticket coverage map. |
+| SCRUM-135 | `SCRUM-135 - CI runs the documented admin test command and discovers its specs` checks CI wiring, Jest configuration, and spec discovery; the coverage-map smoke verifies this prefixed case is present. |

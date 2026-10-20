@@ -15,7 +15,7 @@ describe('WebsiteAdminListPage', () => {
     status: 'DRAFT',
     templateName: 'Portfolio',
     pageViews: 0,
-    createdAt: '2026-01-02T00:00:00Z',
+    createdAt: '2026-01-03T12:00:00Z',
     updatedAt: '2026-01-03T00:00:00Z',
   };
 
@@ -43,7 +43,7 @@ describe('WebsiteAdminListPage', () => {
     expect(row.textContent).toContain('Portfolio');
     expect(row.textContent).toContain('Ada Lovelace');
     expect(row.textContent).toContain('Not tracked');
-    expect(row.textContent).toContain('Jan 2, 2026');
+    expect(row.textContent).toContain('Jan 3, 2026');
 
     const viewButton = fixture.nativeElement.querySelector(
       'button[aria-label="View details"]'
@@ -55,7 +55,7 @@ describe('WebsiteAdminListPage', () => {
     expect(dialog.textContent).toContain('Ada Lovelace');
     expect(dialog.textContent).toContain('Portfolio');
     expect(dialog.textContent).toContain('Not tracked');
-    expect(dialog.textContent).toContain('Jan 2, 2026');
+    expect(dialog.textContent).toContain('Jan 3, 2026');
   });
 
   it('SCRUM-99 - handles nullable owner and template names with email and em dash fallbacks', () => {
