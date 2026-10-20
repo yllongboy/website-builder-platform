@@ -88,6 +88,14 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await websiteAfterEdit.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
   await page.reload();
+  // Builder auth is in-memory. Re-authenticate after reload before verifying
+  // the persisted dashboard name.
+  await expect(page).toHaveURL(/\/landing$/);
+  await page.goto(`${builderUrl}/login`);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill('LocalOnly-12345');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
   await expect(page.getByRole('heading', { name: renamed })).toBeVisible();
 });
 
