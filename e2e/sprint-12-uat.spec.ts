@@ -44,10 +44,18 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(/^Saved /)).toBeVisible();
 
-  const editorUrl = page.url();
   await page.reload();
-  await expect(page).toHaveURL(editorUrl);
-  await expect(canvas.locator('body')).toContainText(savedText);
+  await expect(page).toHaveURL(/\/landing$/);
+  await page.goto(`${builderUrl}/login`);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password (min 8 characters)').fill('LocalOnly-12345');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
+
+  const websiteAfterReload = page.locator('ui-card').filter({ hasText: templateName }).first();
+  await expect(websiteAfterReload).toBeVisible();
+  await websiteAfterReload.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.frameLocator('iframe.gjs-frame').locator('body')).toContainText(savedText);
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
 
