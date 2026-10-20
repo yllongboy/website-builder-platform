@@ -34,7 +34,7 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'E2E_API_TARGET=http://127.0.0.1:8081 corepack pnpm exec nx serve builder-app --host 127.0.0.1 --port 4200',
+      command: 'E2E_API_TARGET=http://127.0.0.1:8081 corepack pnpm exec nx serve builder-app --configuration=e2e --host 127.0.0.1 --port 4200',
       url: builderUrl,
       reuseExistingServer: false,
       timeout: 120_000,
@@ -42,7 +42,7 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'E2E_API_TARGET=http://127.0.0.1:8081 corepack pnpm exec nx serve admin-app --host 127.0.0.1 --port 4201',
+      command: 'E2E_API_TARGET=http://127.0.0.1:8081 corepack pnpm exec nx serve admin-app --configuration=e2e --host 127.0.0.1 --port 4201',
       url: adminUrl,
       reuseExistingServer: false,
       timeout: 120_000,

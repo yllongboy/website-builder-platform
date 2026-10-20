@@ -25,7 +25,9 @@ public class E2eDataSourceUrlEnvironmentPostProcessor implements EnvironmentPost
             "spring.datasource.dbcp2.data-source",
             "spring.datasource.oracleucp.connection-factory-class-name",
             "spring.datasource.xa.data-source-class-name");
-    private static final List<String> ALLOWED_FLYWAY_PROPERTIES = List.of("spring.flyway.enabled");
+    private static final List<String> ALLOWED_FLYWAY_PROPERTIES =
+            List.of("spring.flyway.enabled", "spring.flyway.locations");
+    private static final String ALLOWED_FLYWAY_LOCATIONS = "classpath:db/migration,classpath:db/e2e-migration";
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
@@ -76,6 +78,12 @@ public class E2eDataSourceUrlEnvironmentPostProcessor implements EnvironmentPost
                     throw new IllegalStateException(
                             "E2E profile does not allow Flyway datasource override " + property + "; refusing to start.");
                 }
+            }
+            String flywayLocations = environment.getProperty("spring.flyway.locations");
+            if (!ALLOWED_FLYWAY_LOCATIONS.equals(flywayLocations)) {
+                throw new IllegalStateException(
+                        "E2E profile requires spring.flyway.locations=" + ALLOWED_FLYWAY_LOCATIONS
+                                + "; refusing to start.");
             }
         }
     }

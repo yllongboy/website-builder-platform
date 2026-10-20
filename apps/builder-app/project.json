@@ -36,6 +36,17 @@
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
+        },
+        "e2e": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "fileReplacements": [
+            {
+              "replace": "apps/builder-app/src/environments/environment.ts",
+              "with": "apps/builder-app/src/environments/environment.e2e.ts"
+            }
+          ]
         }
       },
       "defaultConfiguration": "production"
@@ -47,7 +58,8 @@
       },
       "configurations": {
         "production": { "buildTarget": "builder-app:build:production" },
-        "development": { "buildTarget": "builder-app:build:development" }
+        "development": { "buildTarget": "builder-app:build:development" },
+        "e2e": { "buildTarget": "builder-app:build:e2e" }
       },
       "defaultConfiguration": "development"
     },

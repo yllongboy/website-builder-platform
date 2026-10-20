@@ -16,7 +16,7 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
 
   await expect(page.getByRole('heading', { name: 'My Websites' })).toBeVisible();
   await page.getByRole('button', { name: 'Create Website' }).click();
-  await expect(page.getByRole('heading', { name: 'Templates' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Templates', exact: true })).toBeVisible();
 
   const firstFreeTemplate = page
     .locator('ui-card')
@@ -61,14 +61,29 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
 });
 
 test('SCRUM-137 - admin dashboard loads metrics and a saved setting survives reload', async ({ page }) => {
+  const dashboardApiResponses: string[] = [];
+  page.on('response', async (response) => {
+    const path = new URL(response.url()).pathname;
+    if (path.endsWith('/admin/metrics') || path.endsWith('/admin/websites')) {
+      const body = response.ok() ? '' : (await response.text()).slice(0, 500);
+      dashboardApiResponses.push(`${response.status()} ${path}${body ? `: ${body}` : ''}`);
+    }
+  });
+
   await page.goto(`${adminUrl}/login`);
   await page.getByLabel('Email').fill(adminEmail);
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign In' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
+  await expect(page.getByText('Loading metrics...', { exact: true })).toBeHidden({ timeout: 15_000 });
+  const dashboardError = page.getByRole('alert');
+  if (await dashboardError.isVisible()) {
+    throw new Error(`Admin dashboard failed to load: ${await dashboardError.innerText()}. API responses: ${dashboardApiResponses.join('; ') || 'none captured'}`);
+  }
 
   const totalUsersLabel = page.getByText('Total Users', { exact: true });
-  await expect(totalUsersLabel).toBeVisible();
+  await expect(totalUsersLabel).toBeVisible({ timeout: 15_000 });
   const totalUsersValue = totalUsersLabel.locator('xpath=..').getByText(/^\d+$/);
   await expect(totalUsersValue).toBeVisible();
 
