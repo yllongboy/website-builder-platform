@@ -8,10 +8,12 @@ import com.websitebuilder.platform.templates.entity.TemplateEntity;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 
 class TemplateMapperAdminTest {
 
     @Test
+    @DisplayName("SCRUM-101 - template admin response includes usage count and creation timestamp")
     void mapsUsageCountAndCreationTimestamp() {
         Instant createdAt = Instant.parse("2026-10-01T12:34:56Z");
         CategoryEntity category = new CategoryEntity(UUID.randomUUID(), "Business", "business", null, 0, true, createdAt, createdAt);

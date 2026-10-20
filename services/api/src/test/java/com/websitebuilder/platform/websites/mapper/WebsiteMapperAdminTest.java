@@ -14,12 +14,14 @@ import com.websitebuilder.platform.websites.entity.WebsiteStatus;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 
 class WebsiteMapperAdminTest {
 
     private final WebsiteMapper mapper = new WebsiteMapper();
 
     @Test
+    @DisplayName("SCRUM-99 - admin website response includes owner, template, page views, and creation time")
     void toAdminResponse_includesTemplateTrimmedOwnerAndAdminDetailDefaults() {
         Instant createdAt = Instant.parse("2026-02-03T04:05:06Z");
         Instant updatedAt = Instant.parse("2026-04-05T06:07:08Z");
@@ -37,6 +39,7 @@ class WebsiteMapperAdminTest {
     }
 
     @Test
+    @DisplayName("SCRUM-99 - admin website response permits missing owner and template names")
     void toAdminResponse_returnsNullForMissingTemplateAndOwnerNames() {
         Instant now = Instant.parse("2026-02-03T04:05:06Z");
         WebsiteEntity website = website(user("  ", null), null, now, now);

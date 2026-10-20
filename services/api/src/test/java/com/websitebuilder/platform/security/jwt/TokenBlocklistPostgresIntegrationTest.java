@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.websitebuilder.platform.WebsiteBuilderPlatformApplication;
 import org.springframework.boot.WebApplicationType;
@@ -47,6 +48,7 @@ class TokenBlocklistPostgresIntegrationTest {
     private RevokedTokenRepository revokedTokenRepository;
 
     @Test
+    @DisplayName("SCRUM-125 - revoked JWT identifiers remain revoked after an application restart")
     void revokedJti_survivesApplicationContextRestartAgainstSameDatabase() {
         String jti = "restart-test-" + UUID.randomUUID();
         Instant expiresAt = Instant.now().plusSeconds(600);
@@ -70,6 +72,7 @@ class TokenBlocklistPostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("SCRUM-125 - expiry cleanup removes expired identifiers and keeps active ones")
     void evictExpired_removesExpiredJtisAndRetainsUnexpiredJtis() {
         String expiredJti = "expired-" + UUID.randomUUID();
         String activeJti = "active-" + UUID.randomUUID();

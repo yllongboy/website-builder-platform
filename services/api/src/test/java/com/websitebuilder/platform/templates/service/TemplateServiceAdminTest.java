@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,6 +29,7 @@ class TemplateServiceAdminTest {
     @Mock private TemplateMapper templateMapper;
 
     @Test
+    @DisplayName("SCRUM-101 - template usage is counted from website references and defaults to zero")
     void listAdminLoadsWebsiteUsageCountsInOneBatchAndDefaultsMissingCountToZero() {
         Instant now = Instant.parse("2026-10-01T12:34:56Z");
         CategoryEntity category = new CategoryEntity(UUID.randomUUID(), "Business", "business", null, 0, true, now, now);

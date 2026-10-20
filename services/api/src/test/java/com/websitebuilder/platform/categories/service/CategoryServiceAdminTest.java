@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +26,7 @@ class CategoryServiceAdminTest {
     @Mock private TemplateRepository templateRepository;
 
     @Test
+    @DisplayName("SCRUM-103 - categories receive their own batched template count and zero fallback")
     void listAdminUsesBatchCountsAndDefaultsMissingCountsToZero() {
         UUID firstId = UUID.randomUUID();
         UUID secondId = UUID.randomUUID();

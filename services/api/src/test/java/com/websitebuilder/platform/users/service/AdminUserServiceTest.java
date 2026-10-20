@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -115,10 +116,14 @@ class AdminUserServiceTest {
     }
 
     @Test
+    @DisplayName("SCRUM-97 - admin user responses include first and last names")
     void getById_returnsUser_whenFound() {
         AdminUserService service = new AdminUserService(userRepository, subscriptionRepository, websiteRepository);
         UUID userId = UUID.fromString("33333333-3333-3333-3333-333333333333");
-        UserEntity user = testUser(userId, com.websitebuilder.platform.users.entity.UserStatus.ACTIVE);
+        Instant createdAt = Instant.parse("2026-05-01T10:15:30Z");
+        UserEntity user = new UserEntity(userId, "admin-user-33333333-3333-3333-3333-333333333333@example.com",
+                "Ada", "Lovelace", "password-hash", UserRole.USER,
+                com.websitebuilder.platform.users.entity.UserStatus.ACTIVE, createdAt, createdAt);
         SubscriptionEntity subscription = testSubscription(
                 UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"),
                 user,
@@ -134,6 +139,8 @@ class AdminUserServiceTest {
 
         assertEquals(userId, result.id());
         assertNotNull(result.subscriptionStatus());
+        assertEquals("Ada", result.firstName());
+        assertEquals("Lovelace", result.lastName());
     }
 
     @Test

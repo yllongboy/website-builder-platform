@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.websitebuilder.platform.admin.billing.dto.AdminSubscriptionPageResponse;
+import com.websitebuilder.platform.admin.billing.dto.AdminBillingOverviewResponse;
 import com.websitebuilder.platform.billing.entity.SubscriptionEntity;
 import com.websitebuilder.platform.billing.entity.SubscriptionStatus;
 import com.websitebuilder.platform.billing.repository.SubscriptionRepository;
@@ -16,9 +17,11 @@ import com.websitebuilder.platform.users.entity.UserRole;
 import com.websitebuilder.platform.users.entity.UserStatus;
 import com.websitebuilder.platform.users.repository.UserRepository;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -74,6 +77,7 @@ class AdminBillingServiceTest {
     }
 
     @Test
+    @DisplayName("SCRUM-105 - subscription rows expose plan, status, amount, renewal, and creation fields")
     void getSubscriptions_keepsNominalPaginationValues() {
         AdminBillingService service = new AdminBillingService(subscriptionRepository, userRepository, environment);
 
@@ -88,6 +92,54 @@ class AdminBillingServiceTest {
         assertEquals(1L, response.totalElements());
         assertEquals(1, response.content().size());
         assertRequestedPageAndSize(0, 20);
+    }
+
+    @Test
+    @DisplayName("SCRUM-105 - subscription response maps the recorded billing fields")
+    void getSubscriptions_mapsRecordedPlanStatusAmountAndDates() {
+        AdminBillingService service = new AdminBillingService(subscriptionRepository, userRepository, environment);
+        Instant renewal = Instant.parse("2026-12-01T00:00:00Z");
+        SubscriptionEntity subscription = createSubscription(renewal);
+        subscription.setRecurringPriceSnapshot(1499L, "usd", "month", 1);
+        when(subscriptionRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(subscription), Pageable.unpaged(), 1));
+
+        var row = service.getSubscriptions(0, 20).content().getFirst();
+
+        assertEquals(subscription.user().id(), row.userId());
+        assertEquals(subscription.user().email(), row.userEmail());
+        assertEquals(subscription.user().email(), row.userName());
+        assertEquals("pro_monthly", row.plan());
+        assertEquals("pro_monthly", row.planCode());
+        assertEquals(SubscriptionStatus.ACTIVE, row.status());
+        assertEquals(subscription.createdAt(), row.createdAt());
+        assertEquals(renewal, row.currentPeriodEnd());
+        assertEquals(renewal, row.renewalDate());
+        assertEquals(new BigDecimal("14.99"), row.amount());
+        assertEquals("USD", row.currency());
+    }
+
+    @Test
+    @DisplayName("SCRUM-105 - billing overview returns active, past due, plan, and mocked monthly revenue totals")
+    void getOverview_returnsCountsAndMonthlyRecurringRevenueFromSnapshots() {
+        AdminBillingService service = new AdminBillingService(subscriptionRepository, userRepository, environment);
+        SubscriptionEntity active = createSubscription(Instant.parse("2026-12-01T00:00:00Z"));
+        active.setRecurringPriceSnapshot(2500L, "usd", "month", 1);
+        when(subscriptionRepository.countByStatusIn(any())).thenReturn(2L);
+        when(subscriptionRepository.countByStatus(SubscriptionStatus.ACTIVE)).thenReturn(1L);
+        when(subscriptionRepository.countByStatus(SubscriptionStatus.TRIALING)).thenReturn(1L);
+        when(subscriptionRepository.countByStatus(SubscriptionStatus.PAST_DUE)).thenReturn(3L);
+        when(subscriptionRepository.findByStatusIn(List.of(SubscriptionStatus.ACTIVE))).thenReturn(List.of(active));
+        when(subscriptionRepository.findByStatusIn(List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING)))
+                .thenReturn(List.of(active));
+
+        AdminBillingOverviewResponse response = service.getOverview();
+
+        assertEquals(new BigDecimal("25.00"), response.mrr());
+        assertEquals(1L, response.activeCount());
+        assertEquals(1L, response.trialingCount());
+        assertEquals(3L, response.pastDueCount());
+        assertEquals(1L, response.planDistribution().get("pro_monthly"));
     }
 
     @Test

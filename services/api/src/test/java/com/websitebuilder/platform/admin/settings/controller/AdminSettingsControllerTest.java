@@ -19,6 +19,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -53,6 +54,7 @@ class AdminSettingsControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-107 - admin patch persists settings returned by a later get")
     @WithMockUser(roles = "ADMIN")
     void patchSettings_persistsUpdatesAndGetReturnsThem() throws Exception {
         mockMvc.perform(patch("/admin/settings")
@@ -82,6 +84,7 @@ class AdminSettingsControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-107 - partial patch preserves omitted setting fields")
     @WithMockUser(roles = "ADMIN")
     void patchSettings_withPartialUpdatePreservesOmittedFields() throws Exception {
         mockMvc.perform(patch("/admin/settings")
@@ -98,6 +101,7 @@ class AdminSettingsControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-107 - empty patch is rejected without a database write")
     @WithMockUser(roles = "ADMIN")
     void patchSettings_withEmptyPatchReturnsBadRequest() throws Exception {
         mockMvc.perform(patch("/admin/settings")
@@ -109,6 +113,7 @@ class AdminSettingsControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-107 - invalid patch values are rejected without a database write")
     @WithMockUser(roles = "ADMIN")
     void patchSettings_withInvalidValuesReturnsBadRequest() throws Exception {
         mockMvc.perform(patch("/admin/settings")
@@ -120,6 +125,7 @@ class AdminSettingsControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-107 - non-admin cannot read platform settings")
     @WithMockUser(roles = "USER")
     void getSettings_nonAdminIsForbidden() throws Exception {
         mockMvc.perform(get("/admin/settings"))

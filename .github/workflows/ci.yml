@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   frontend-checks:
-    name: Admin App Checks
+    name: Frontend Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,6 +39,12 @@ jobs:
 
       - name: Test
         run: pnpm exec nx run admin-app:test --runInBand
+
+      - name: Test Builder app
+        run: pnpm exec nx run builder-app:test --runInBand
+
+      - name: Verify Sprint 12 UAT automation command and coverage map
+        run: pnpm run test:sprint12-uat
 
   backend-checks:
     name: Backend Build and Tests

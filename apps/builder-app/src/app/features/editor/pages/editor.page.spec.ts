@@ -2,20 +2,23 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { EditorApiService } from '../data-access/editor-api.service';
+import { WebsiteApiService } from '../../websites/data-access/website-api.service';
 import { EditorPage } from './editor.page';
 
 describe('EditorPage', () => {
   let fixture: ComponentFixture<EditorPage>;
   let component: EditorPage;
-  let editorApiService: jasmine.SpyObj<EditorApiService>;
+  let editorApiService: jest.Mocked<Pick<EditorApiService, 'loadEditorState' | 'saveEditorState'>>;
+  let websiteApiService: jest.Mocked<Pick<WebsiteApiService,
+    'createBlankWebsite' | 'publish' | 'republish' | 'unpublish' | 'getPublishLogs'>>;
 
   beforeEach(async () => {
-    editorApiService = jasmine.createSpyObj<EditorApiService>('EditorApiService', [
-      'loadEditorState',
-      'saveEditorState',
-    ]);
+    editorApiService = {
+      loadEditorState: jest.fn(),
+      saveEditorState: jest.fn(),
+    };
 
-    editorApiService.loadEditorState.and.returnValue(
+    editorApiService.loadEditorState.mockReturnValue(
       of({
         websiteId: 'website-1',
         htmlContent: '',
@@ -26,13 +29,21 @@ describe('EditorPage', () => {
       }) as never
     );
 
-    editorApiService.saveEditorState.and.returnValue(
+    editorApiService.saveEditorState.mockReturnValue(
       of({
         websiteId: 'website-1',
         versionNumber: 1,
         savedAt: new Date().toISOString(),
       }) as never
     );
+
+    websiteApiService = {
+      createBlankWebsite: jest.fn(),
+      publish: jest.fn(),
+      republish: jest.fn(),
+      unpublish: jest.fn(),
+      getPublishLogs: jest.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [EditorPage],
@@ -47,11 +58,15 @@ describe('EditorPage', () => {
         },
         {
           provide: Router,
-          useValue: jasmine.createSpyObj<Router>('Router', ['navigate']),
+          useValue: { navigate: jest.fn() },
         },
         {
           provide: EditorApiService,
           useValue: editorApiService,
+        },
+        {
+          provide: WebsiteApiService,
+          useValue: websiteApiService,
         },
       ],
     })
@@ -69,13 +84,13 @@ describe('EditorPage', () => {
   });
 
   it('starts with isDirty set to false', () => {
-    expect(component.isDirty).toBeFalse();
+    expect(component.isDirty).toBe(false);
   });
 
   it('onContentChange sets isDirty to true', () => {
     component.onContentChange({ html: '<div>a</div>', css: '', editorState: null });
 
-    expect(component.isDirty).toBeTrue();
+    expect(component.isDirty).toBe(true);
   });
 
   it('sets isDirty to false after successful save', () => {
@@ -83,7 +98,7 @@ describe('EditorPage', () => {
 
     component.manualSave();
 
-    expect(component.isDirty).toBeFalse();
+    expect(component.isDirty).toBe(false);
   });
 
   it('sets isSaving to false after successful save', () => {
@@ -91,11 +106,11 @@ describe('EditorPage', () => {
 
     component.manualSave();
 
-    expect(component.isSaving).toBeFalse();
+    expect(component.isSaving).toBe(false);
   });
 
   it('undo calls grapesEditor.UndoManager.undo', () => {
-    const undo = jasmine.createSpy('undo');
+    const undo = jest.fn();
     (component as any).grapesEditor = {
       UndoManager: {
         undo,
@@ -110,7 +125,7 @@ describe('EditorPage', () => {
   });
 
   it('redo calls grapesEditor.UndoManager.redo', () => {
-    const redo = jasmine.createSpy('redo');
+    const redo = jest.fn();
     (component as any).grapesEditor = {
       UndoManager: {
         redo,
@@ -126,7 +141,7 @@ describe('EditorPage', () => {
 
   it('beforeunload prevents default when dirty', () => {
     component.isDirty = true;
-    const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as BeforeUnloadEvent;
+    const event = { preventDefault: jest.fn() } as unknown as BeforeUnloadEvent;
 
     component.onBeforeUnload(event);
 
@@ -135,7 +150,7 @@ describe('EditorPage', () => {
 
   it('beforeunload does not prevent default when not dirty', () => {
     component.isDirty = false;
-    const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as BeforeUnloadEvent;
+    const event = { preventDefault: jest.fn() } as unknown as BeforeUnloadEvent;
 
     component.onBeforeUnload(event);
 
@@ -143,6 +158,6 @@ describe('EditorPage', () => {
   });
 
   afterEach(() => {
-    component.ngOnDestroy();
+    fixture?.destroy();
   });
 });

@@ -46,7 +46,7 @@ describe('AdminSettingsPage', () => {
     fixture.detectChanges();
   });
 
-  it('loads and applies persisted platform settings', () => {
+  it('SCRUM-107 - loads and applies persisted platform settings', () => {
     expect(settingsApi.getSettings).toHaveBeenCalled();
     expect(component.siteName).toBe(settings.siteName);
     expect(component.siteDescription).toBe(settings.siteDescription);
@@ -62,7 +62,7 @@ describe('AdminSettingsPage', () => {
     expect(component.loading).toBe(false);
   });
 
-  it('submits current values and shows save success', () => {
+  it('SCRUM-107 - submits current values and shows save success', () => {
     component.siteName = 'Updated Studio';
     component.siteDescription = 'Updated description';
     component.supportEmail = 'updated@example.com';
@@ -100,7 +100,7 @@ describe('AdminSettingsPage', () => {
     expect(component.saveError).toBeUndefined();
   });
 
-  it('reports load authorization errors and keeps settings unavailable', () => {
+  it('SCRUM-107 - reports load authorization errors and keeps settings unavailable', () => {
     settingsApi.getSettings.mockReturnValue(throwError(() => ({ status: 403 })));
     const failedFixture = TestBed.createComponent(AdminSettingsPage);
     failedFixture.detectChanges();
@@ -111,7 +111,7 @@ describe('AdminSettingsPage', () => {
     failedFixture.destroy();
   });
 
-  it('reports save validation errors and allows another save attempt', () => {
+  it('SCRUM-107 - reports save validation errors and allows another save attempt', () => {
     settingsApi.updateSettings.mockReturnValue(
       throwError(() => ({ status: 422, error: { message: 'Password length is invalid.' } }))
     );
