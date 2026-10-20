@@ -1,4 +1,3 @@
-/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
 # Browser end-to-end tests
 
 The Playwright suite opens Chromium and clicks through the rendered Builder and Admin apps. It registers a uniquely named Builder user, creates a site from a free template, edits text in the GrapesJS canvas, saves it, reloads the editor to verify the saved content, and renames the site. It also signs into Admin, checks that dashboard metrics have loaded, updates the platform site name, checks it after reload, and restores the original value.
