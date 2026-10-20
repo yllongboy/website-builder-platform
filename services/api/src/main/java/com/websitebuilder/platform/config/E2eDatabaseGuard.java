@@ -67,7 +67,26 @@ public class E2eDatabaseGuard {
             return false;
         }
         try {
-            InetAddress resolvedAddress = InetAddress.getByName(address);
+            String[] cidrParts = address.split("/", -1);
+            if (cidrParts.length > 2 || cidrParts[0].isBlank()) {
+                return false;
+            }
+
+            String addressLiteral = cidrParts[0];
+            boolean ipv6 = addressLiteral.contains(":");
+            if (ipv6 ? !addressLiteral.matches("[0-9a-fA-F:.]+")
+                    : !addressLiteral.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) {
+                return false;
+            }
+
+            InetAddress resolvedAddress = InetAddress.getByName(addressLiteral);
+            int addressBits = ipv6 ? 128 : 32;
+            if (cidrParts.length == 2) {
+                int prefixLength = Integer.parseInt(cidrParts[1]);
+                if (prefixLength < 0 || prefixLength > addressBits) {
+                    return false;
+                }
+            }
             if (isIpv4MappedIpv6(resolvedAddress.getAddress())) {
                 byte[] mapped = resolvedAddress.getAddress();
                 resolvedAddress = InetAddress.getByAddress(new byte[] {mapped[12], mapped[13], mapped[14], mapped[15]});
