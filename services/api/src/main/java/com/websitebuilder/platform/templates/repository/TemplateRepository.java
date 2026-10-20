@@ -1,6 +1,7 @@
 package com.websitebuilder.platform.templates.repository;
 
 import com.websitebuilder.platform.templates.entity.TemplateEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,4 +25,9 @@ public interface TemplateRepository extends JpaRepository<TemplateEntity, UUID> 
     Optional<TemplateEntity> findBySlug(String slug);
     List<TemplateEntity> findByIsActiveTrue();
     boolean existsByIsActiveTrueAndCategoryId(UUID categoryId);
+
+    long countByCategoryId(UUID categoryId);
+
+    @Query("SELECT t.category.id, COUNT(t) FROM TemplateEntity t WHERE t.category.id IN :categoryIds GROUP BY t.category.id")
+    List<Object[]> countTemplatesByCategoryIds(@Param("categoryIds") Collection<UUID> categoryIds);
 }

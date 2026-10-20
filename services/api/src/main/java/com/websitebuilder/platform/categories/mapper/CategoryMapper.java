@@ -18,14 +18,15 @@ public class CategoryMapper {
         );
     }
 
-    public AdminCategoryResponse toAdminResponse(CategoryEntity entity) {
+    public AdminCategoryResponse toAdminResponse(CategoryEntity entity, long templatesCount) {
         return new AdminCategoryResponse(
                 entity.id(),
                 entity.name(),
                 entity.slug(),
                 entity.description(),
                 entity.sortOrder(),
-                entity.isActive()
+                entity.isActive(),
+                templatesCount
         );
     }
 }

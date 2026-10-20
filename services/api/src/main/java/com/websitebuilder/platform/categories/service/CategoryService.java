@@ -11,8 +11,10 @@ import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.templates.repository.TemplateRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,9 +43,15 @@ public class CategoryService {
     }
 
     public List<AdminCategoryResponse> listAdmin() {
-        return categoryRepository.findAll()
-                .stream()
-                .map(categoryMapper::toAdminResponse)
+        List<CategoryEntity> categories = categoryRepository.findAll();
+        if (categories.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> categoryIds = categories.stream().map(CategoryEntity::id).toList();
+        Map<UUID, Long> templatesCounts = templateRepository.countTemplatesByCategoryIds(categoryIds).stream()
+                .collect(Collectors.toMap(row -> (UUID) row[0], row -> (Long) row[1]));
+        return categories.stream()
+                .map(category -> categoryMapper.toAdminResponse(category, templatesCounts.getOrDefault(category.id(), 0L)))
                 .toList();
     }
 
@@ -66,7 +74,7 @@ public class CategoryService {
         );
 
         categoryRepository.save(entity);
-        return categoryMapper.toAdminResponse(entity);
+        return categoryMapper.toAdminResponse(entity, templateRepository.countByCategoryId(entity.id()));
     }
 
     @Transactional
@@ -87,7 +95,7 @@ public class CategoryService {
         entity.setIsActive(request.isActive() != null ? request.isActive() : true);
 
         categoryRepository.save(entity);
-        return categoryMapper.toAdminResponse(entity);
+        return categoryMapper.toAdminResponse(entity, templateRepository.countByCategoryId(entity.id()));
     }
 
     @Transactional
