@@ -2,7 +2,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@platform/auth';
 
-describe('AuthService logout teardown', () => {
+describe('SCRUM-126 - AuthService logout teardown', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
 
@@ -18,7 +18,7 @@ describe('AuthService logout teardown', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('allows a new logout after the previous request is unsubscribed', () => {
+  it('SCRUM-126 - allows a new logout after the previous request is unsubscribed', () => {
     service.login({ email: 'admin@example.com', password: 'password' }).subscribe();
     httpMock.expectOne('/api/auth/login').flush({
       accessToken: 'test-token',

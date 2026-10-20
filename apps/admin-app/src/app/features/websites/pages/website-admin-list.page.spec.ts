@@ -35,7 +35,7 @@ describe('WebsiteAdminListPage', () => {
     return fixture;
   }
 
-  it('renders the website owner and template details in the list and details dialog', () => {
+  it('SCRUM-99 - renders owner, template, page views, and timestamps in the list and details dialog', () => {
     const fixture = render([website]);
     const row = fixture.nativeElement.querySelector('tbody tr') as HTMLTableRowElement;
 
@@ -43,6 +43,7 @@ describe('WebsiteAdminListPage', () => {
     expect(row.textContent).toContain('Portfolio');
     expect(row.textContent).toContain('Ada Lovelace');
     expect(row.textContent).toContain('Not tracked');
+    expect(row.textContent).toContain('Jan 2, 2026');
 
     const viewButton = fixture.nativeElement.querySelector(
       'button[aria-label="View details"]'
@@ -54,9 +55,10 @@ describe('WebsiteAdminListPage', () => {
     expect(dialog.textContent).toContain('Ada Lovelace');
     expect(dialog.textContent).toContain('Portfolio');
     expect(dialog.textContent).toContain('Not tracked');
+    expect(dialog.textContent).toContain('Jan 2, 2026');
   });
 
-  it('falls back to owner email and em dashes for nullable owner and template names', () => {
+  it('SCRUM-99 - handles nullable owner and template names with email and em dash fallbacks', () => {
     const fixture = render([
       {
         ...website,

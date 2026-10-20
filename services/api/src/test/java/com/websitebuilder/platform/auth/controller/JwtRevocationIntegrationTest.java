@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -108,6 +109,7 @@ class JwtRevocationIntegrationTest {
     private PlatformSettingsRepository platformSettingsRepository;
 
     @Test
+    @DisplayName("SCRUM-125 - logout revokes the token so protected endpoints reject it")
     void revokedToken_cannotAccessProtectedEndpoint() throws Exception {
         Set<String> revokedJtis = java.util.concurrent.ConcurrentHashMap.newKeySet();
         doAnswer(invocation -> {

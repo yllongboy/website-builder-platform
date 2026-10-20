@@ -11,6 +11,7 @@ import com.websitebuilder.platform.common.exceptions.ApiException;
 import com.websitebuilder.platform.common.exceptions.GlobalExceptionHandler;
 import com.websitebuilder.platform.security.filters.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -33,6 +34,7 @@ class AuthControllerTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
+    @DisplayName("SCRUM-127 - logout delegates the bearer authorization header to AuthService")
     void logout_withValidToken_returnsOk() throws Exception {
         mockMvc.perform(post("/auth/logout")
                         .header("Authorization", "Bearer valid-token"))
@@ -43,6 +45,7 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-127 - logout delegates a missing authorization header and returns unauthorized")
     void logout_withMissingAuthorizationHeader_returnsUnauthorized() throws Exception {
         doThrow(new ApiException("AUTH_INVALID_CREDENTIALS", "Invalid session"))
                 .when(authService).logout(null);
@@ -54,6 +57,7 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("SCRUM-127 - logout rejects an invalid authorization header")
     void logout_withInvalidAuthorizationHeader_returnsUnauthorized() throws Exception {
         doThrow(new ApiException("AUTH_INVALID_CREDENTIALS", "Invalid session"))
                 .when(authService).logout("Bearer invalid-token");

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -78,6 +79,7 @@ class AdminActivityPostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("SCRUM-112 - admin activity feed is empty when no events exist")
     void recentFeedIsEmptyWhenNoEventsExist() throws Exception {
         mockMvc.perform(get("/admin/activity").header("Authorization", adminToken()))
                 .andExpect(status().isOk())
@@ -85,6 +87,7 @@ class AdminActivityPostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("SCRUM-112 - activity feed returns only the newest twenty records with stable tie breaking")
     void feedReturnsNewestTwentyWithUuidDescendingTieBreakAndContractFieldsOnly() throws Exception {
         Instant occurredAt = Instant.parse("2026-08-01T10:00:00Z");
         List<ActivityEventEntity> events = java.util.stream.IntStream.rangeClosed(1, 25)
@@ -112,6 +115,7 @@ class AdminActivityPostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("SCRUM-112 - activity feed requires an authenticated administrator")
     void endpointRequiresAuthenticationAndAdminRole() throws Exception {
         mockMvc.perform(get("/admin/activity"))
                 .andExpect(status().isUnauthorized());
@@ -126,6 +130,7 @@ class AdminActivityPostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("SCRUM-112 - recorded activity events survive an application context restart")
     void recordedEventsSurviveFreshApplicationContextAgainstSamePostgresDatabase() {
         String actor = "restart-" + UUID.randomUUID() + "@example.com";
         activityEventService.record(ActivityEventType.WEBSITE_PUBLISHED, "Website published: restart test", actor);
@@ -146,6 +151,21 @@ class AdminActivityPostgresIntegrationTest {
                     .getRecentActivity();
             assertTrue(feed.stream().anyMatch(event -> event.userName().equals(actor)));
         }
+    }
+
+    @Test
+    @DisplayName("SCRUM-112 - feed supports signup, website published, and subscription created event types")
+    void feedContainsRequiredEventTypes() {
+        String actor = "events-" + UUID.randomUUID() + "@example.com";
+        activityEventService.record(ActivityEventType.SIGNUP, "User signed up", actor);
+        activityEventService.record(ActivityEventType.WEBSITE_PUBLISHED, "Website published", actor);
+        activityEventService.record(ActivityEventType.SUBSCRIPTION_CREATED, "Subscription created", actor);
+
+        List<ActivityEventEntity> feed = activityEventService.getRecentActivity();
+
+        assertTrue(feed.stream().anyMatch(event -> event.eventType() == ActivityEventType.SIGNUP));
+        assertTrue(feed.stream().anyMatch(event -> event.eventType() == ActivityEventType.WEBSITE_PUBLISHED));
+        assertTrue(feed.stream().anyMatch(event -> event.eventType() == ActivityEventType.SUBSCRIPTION_CREATED));
     }
 
     private String adminToken() {

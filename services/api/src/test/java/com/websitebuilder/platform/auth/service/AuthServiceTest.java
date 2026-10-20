@@ -26,8 +26,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -108,24 +110,31 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("SCRUM-97 - registration persists names and returns them in the user summary")
     void register_recordsSignupOnlyAfterUserIsSaved() {
         AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
-        RegisterRequest request = new RegisterRequest("new@example.com", "password123");
-        UserSummary summary = new UserSummary(UUID.randomUUID(), request.email(), UserRole.USER);
+        RegisterRequest request = new RegisterRequest("new@example.com", "password123", "Ada", "Lovelace");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded-password");
         when(jwtService.generateToken(any(), eq("USER"))).thenReturn("jwt-token");
-        when(userMapper.toUserSummary(any(UserEntity.class))).thenReturn(summary);
+        when(userMapper.toUserSummary(any(UserEntity.class))).thenAnswer(invocation ->
+                new com.websitebuilder.platform.users.mapper.UserMapper().toUserSummary(invocation.getArgument(0)));
 
         AuthResponse response = authService.register(request);
 
         assertEquals("jwt-token", response.accessToken());
-        verify(userRepository).save(any(UserEntity.class));
+        ArgumentCaptor<UserEntity> savedUser = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(savedUser.capture());
+        assertEquals("Ada", savedUser.getValue().firstName());
+        assertEquals("Lovelace", savedUser.getValue().lastName());
+        assertEquals("Ada", response.user().firstName());
+        assertEquals("Lovelace", response.user().lastName());
         verify(activityEventService).record(ActivityEventType.SIGNUP, "User signed up", request.email());
     }
 
     @Test
+    @DisplayName("SCRUM-97 - duplicate registration does not create an account")
     void register_rejectsDuplicateEmail_withoutRecordingSignup() {
         AuthService authService = new AuthService(userRepository, userMapper, jwtService, passwordEncoder, tokenBlocklistService, activityEventService);
         RegisterRequest request = new RegisterRequest("existing@example.com", "password123");
@@ -134,6 +143,25 @@ class AuthServiceTest {
         assertThrows(ApiException.class, () -> authService.register(request));
 
         verify(activityEventService, never()).record(any(ActivityEventType.class), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("SCRUM-97 - profile lookup returns the user's saved first and last names")
+    void getMe_mapsSavedNamesToProfileResponse() {
+        UUID userId = UUID.fromString("81818181-8181-8181-8181-818181818181");
+        Instant now = Instant.parse("2026-05-01T10:15:30Z");
+        UserEntity user = new UserEntity(userId, "ada@example.com", "Ada", "Lovelace", "hash",
+                com.websitebuilder.platform.users.entity.UserRole.USER,
+                com.websitebuilder.platform.users.entity.UserStatus.ACTIVE, now, now);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userMapper.toUserDetail(user)).thenAnswer(invocation ->
+                new com.websitebuilder.platform.users.mapper.UserMapper().toUserDetail(invocation.getArgument(0)));
+
+        var profile = new AuthService(userRepository, userMapper, jwtService, passwordEncoder,
+                tokenBlocklistService, activityEventService).getMe(userId);
+
+        assertEquals("Ada", profile.firstName());
+        assertEquals("Lovelace", profile.lastName());
     }
 
     private UserEntity testUser(UUID id, String email, com.websitebuilder.platform.users.entity.UserStatus status) {
