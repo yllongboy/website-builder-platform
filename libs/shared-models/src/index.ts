@@ -47,4 +47,5 @@ export * from './lib/common/api-error';
 export * from './lib/common/success-response';
 
 export * from './lib/admin/admin-metrics-response';
+export * from './lib/admin/admin-settings.models';
 export * from './lib/billing/admin-billing.models';

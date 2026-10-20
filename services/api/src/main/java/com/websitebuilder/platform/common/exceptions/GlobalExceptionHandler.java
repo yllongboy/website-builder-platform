@@ -29,6 +29,7 @@ public class GlobalExceptionHandler {
             case "SUBSCRIPTION_REQUIRED" -> HttpStatus.PAYMENT_REQUIRED;
             case "SUBSCRIPTION_NOT_FOUND" -> HttpStatus.PAYMENT_REQUIRED;
             case "STRIPE_SIGNATURE_INVALID" -> HttpStatus.BAD_REQUEST;
+            case "VALIDATION_ERROR" -> HttpStatus.BAD_REQUEST;
             case "BILLING_PLAN_NOT_SUPPORTED" -> HttpStatus.BAD_REQUEST;
             case "ADMIN_METRICS_PERIOD_INVALID" -> HttpStatus.BAD_REQUEST;
             case "BILLING_CHECKOUT_FAILED" -> HttpStatus.BAD_GATEWAY;

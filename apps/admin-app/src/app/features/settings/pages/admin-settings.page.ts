@@ -1,10 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ChangeDetectorRef,
+  OnInit,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AdminSettingsResponse, UpdateAdminSettingsRequest } from '@platform/shared-models';
 import { IconComponent } from '../../../core/shared/icon.component';
+import { AdminSettingsApiService } from '../data-access/admin-settings-api.service';
 
 interface SettingsTab {
   id: string;
@@ -27,10 +32,19 @@ interface SettingsTab {
           <p class="text-[13px] text-foreground-muted mt-1 leading-5">Manage platform settings</p>
         </div>
         <button type="button" (click)="save()"
+          [disabled]="!settingsLoaded || loading || saving"
+          [attr.aria-busy]="saving"
           class="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors">
-          <wb-icon name="save" [size]="16"></wb-icon>Save Changes
+          <wb-icon name="save" [size]="16"></wb-icon>{{ saving ? 'Saving…' : 'Save Changes' }}
         </button>
       </div>
+
+      <div *ngIf="loading" role="status" aria-live="polite"
+        class="text-[13px] text-foreground-muted">Loading platform settings…</div>
+      <div *ngIf="loadError" role="alert"
+        class="bg-danger/10 text-danger border border-danger/20 rounded-md px-4 py-3 text-[13px]">{{ loadError }}</div>
+      <div *ngIf="saveError" role="alert"
+        class="bg-danger/10 text-danger border border-danger/20 rounded-md px-4 py-3 text-[13px]">{{ saveError }}</div>
 
       <!-- Save Success Banner -->
       <div *ngIf="savedSuccess"
@@ -67,22 +81,19 @@ interface SettingsTab {
             <div class="flex flex-col gap-5">
               <label class="flex flex-col gap-1.5">
                 <span class="text-[13px] font-medium text-foreground">Site Name</span>
-                <input type="text" [(ngModel)]="siteName"
+                <input type="text" [(ngModel)]="siteName" [disabled]="!settingsLoaded || saving"
                   class="px-3 py-2 text-[13px] bg-background border border-border/70 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground" />
               </label>
               <label class="flex flex-col gap-1.5">
                 <span class="text-[13px] font-medium text-foreground">Site Description</span>
-                <textarea [(ngModel)]="siteDescription" rows="3"
+                <textarea [(ngModel)]="siteDescription" rows="3" [disabled]="!settingsLoaded || saving"
                   class="px-3 py-2 text-[13px] bg-background border border-border/70 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground resize-none"></textarea>
               </label>
               <label class="flex flex-col gap-1.5">
                 <span class="text-[13px] font-medium text-foreground">Support Email</span>
-                <input type="email" [(ngModel)]="supportEmail"
+                <input type="email" [(ngModel)]="supportEmail" [disabled]="!settingsLoaded || saving"
                   class="px-3 py-2 text-[13px] bg-background border border-border/70 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground" />
               </label>
-              <div class="pt-2 text-xs text-foreground-muted border-t border-border/50">
-                These settings are local placeholders. Backend persistence tracked in <span class="font-medium">SCRUM-107</span>.
-              </div>
             </div>
           </section>
 
@@ -96,6 +107,7 @@ interface SettingsTab {
                   <p class="text-xs text-foreground-muted mt-0.5">Receive notifications via email</p>
                 </div>
                 <button type="button" (click)="emailNotifications = !emailNotifications"
+                  [disabled]="!settingsLoaded || saving"
                   [attr.aria-pressed]="emailNotifications"
                   [ngClass]="emailNotifications ? 'bg-primary' : 'bg-muted'"
                   class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0">
@@ -110,6 +122,7 @@ interface SettingsTab {
                   <p class="text-xs text-foreground-muted mt-0.5">Get notified when a new user registers</p>
                 </div>
                 <button type="button" (click)="newUserNotifications = !newUserNotifications"
+                  [disabled]="!settingsLoaded || saving"
                   [attr.aria-pressed]="newUserNotifications"
                   [ngClass]="newUserNotifications ? 'bg-primary' : 'bg-muted'"
                   class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0">
@@ -123,6 +136,7 @@ interface SettingsTab {
                   <p class="text-xs text-foreground-muted mt-0.5">Get notified about payment events</p>
                 </div>
                 <button type="button" (click)="paymentNotifications = !paymentNotifications"
+                  [disabled]="!settingsLoaded || saving"
                   [attr.aria-pressed]="paymentNotifications"
                   [ngClass]="paymentNotifications ? 'bg-primary' : 'bg-muted'"
                   class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0">
@@ -136,6 +150,7 @@ interface SettingsTab {
                   <p class="text-xs text-foreground-muted mt-0.5">Receive a weekly summary of platform activity</p>
                 </div>
                 <button type="button" (click)="weeklyReport = !weeklyReport"
+                  [disabled]="!settingsLoaded || saving"
                   [attr.aria-pressed]="weeklyReport"
                   [ngClass]="weeklyReport ? 'bg-primary' : 'bg-muted'"
                   class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0">
@@ -156,6 +171,7 @@ interface SettingsTab {
                   <p class="text-xs text-foreground-muted mt-0.5">Enforce 2FA for all admin users</p>
                 </div>
                 <button type="button" (click)="twoFactorRequired = !twoFactorRequired"
+                  [disabled]="!settingsLoaded || saving"
                   [attr.aria-pressed]="twoFactorRequired"
                   [ngClass]="twoFactorRequired ? 'bg-primary' : 'bg-muted'"
                   class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0">
@@ -166,12 +182,12 @@ interface SettingsTab {
               <div class="border-t border-border/50"></div>
               <label class="flex flex-col gap-1.5">
                 <span class="text-[13px] font-medium text-foreground">Session Timeout (hours)</span>
-                <input type="number" [(ngModel)]="sessionTimeout" min="1" max="720"
+                <input type="number" [(ngModel)]="sessionTimeout" min="1" max="720" [disabled]="!settingsLoaded || saving"
                   class="px-3 py-2 text-[13px] bg-background border border-border/70 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground w-32" />
               </label>
               <label class="flex flex-col gap-1.5">
                 <span class="text-[13px] font-medium text-foreground">Minimum Password Length</span>
-                <input type="number" [(ngModel)]="passwordMinLength" min="6" max="32"
+                <input type="number" [(ngModel)]="passwordMinLength" min="8" max="128" [disabled]="!settingsLoaded || saving"
                   class="px-3 py-2 text-[13px] bg-background border border-border/70 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/30 text-foreground w-32" />
               </label>
             </div>
@@ -253,9 +269,17 @@ interface SettingsTab {
     </div>
   `
 })
-export class AdminSettingsPage {
+export class AdminSettingsPage implements OnInit {
+  private readonly settingsApi = inject(AdminSettingsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   activeTab = 'general';
   savedSuccess = false;
+  loading = true;
+  saving = false;
+  settingsLoaded = false;
+  loadError?: string;
+  saveError?: string;
 
   readonly tabs: SettingsTab[] = [
     { id: 'general',       label: 'General',       icon: 'globe' },
@@ -290,9 +314,86 @@ export class AdminSettingsPage {
   selectedColor = '#6366f1';
   selectedTheme: 'light' | 'dark' | 'system' = 'light';
 
+  ngOnInit(): void {
+    this.loadSettings();
+  }
+
+  loadSettings(): void {
+    this.loading = true;
+    this.loadError = undefined;
+    this.settingsApi.getSettings().subscribe({
+      next: (settings) => {
+        this.applySettings(settings);
+        this.settingsLoaded = true;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: (error: { status?: number; error?: { message?: string } }) => {
+        this.loadError = this.errorMessage(error, 'load');
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   save(): void {
-    this.savedSuccess = true;
-    // Auto-hide after 4 seconds
-    window.setTimeout(() => { this.savedSuccess = false; }, 4000);
+    if (!this.settingsLoaded || this.loading || this.saving) return;
+
+    const request: UpdateAdminSettingsRequest = {
+      siteName: this.siteName,
+      siteDescription: this.siteDescription,
+      supportEmail: this.supportEmail,
+      notifications: {
+        emailNotifications: this.emailNotifications,
+        newUserNotifications: this.newUserNotifications,
+        paymentNotifications: this.paymentNotifications,
+        weeklyReport: this.weeklyReport,
+      },
+      security: {
+        twoFactorRequired: this.twoFactorRequired,
+        sessionTimeout: this.sessionTimeout,
+        passwordMinLength: this.passwordMinLength,
+      },
+    };
+
+    this.saving = true;
+    this.savedSuccess = false;
+    this.saveError = undefined;
+    this.settingsApi.updateSettings(request).subscribe({
+      next: (settings) => {
+        this.applySettings(settings);
+        this.saving = false;
+        this.savedSuccess = true;
+        this.cdr.markForCheck();
+      },
+      error: (error: { status?: number; error?: { message?: string } }) => {
+        this.saving = false;
+        this.saveError = this.errorMessage(error, 'save');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private applySettings(settings: AdminSettingsResponse): void {
+    this.siteName = settings.siteName;
+    this.siteDescription = settings.siteDescription;
+    this.supportEmail = settings.supportEmail;
+    this.emailNotifications = settings.notifications.emailNotifications;
+    this.newUserNotifications = settings.notifications.newUserNotifications;
+    this.paymentNotifications = settings.notifications.paymentNotifications;
+    this.weeklyReport = settings.notifications.weeklyReport;
+    this.twoFactorRequired = settings.security.twoFactorRequired;
+    this.sessionTimeout = settings.security.sessionTimeout;
+    this.passwordMinLength = settings.security.passwordMinLength;
+  }
+
+  private errorMessage(error: { status?: number; error?: { message?: string } }, operation: 'load' | 'save'): string {
+    if (error.status === 401 || error.status === 403) {
+      return 'You do not have permission to manage platform settings. Please sign in with an administrator account.';
+    }
+    if (error.status === 400 || error.status === 422) {
+      return error.error?.message || 'Some settings are invalid. Check the values and try again.';
+    }
+    return error.error?.message || `Unable to ${operation} platform settings. Please try again.`;
   }
 }
