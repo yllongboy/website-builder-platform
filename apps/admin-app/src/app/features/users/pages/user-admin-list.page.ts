@@ -282,7 +282,7 @@ export class UserAdminListPage implements OnInit {
         this.currentAdminId = user.id;
         this.cdr.markForCheck();
       },
-      error: (err) => {
+      error: () => {
         console.error('Failed to load current admin');
         this.currentAdminId = '';
         this.cdr.markForCheck();
