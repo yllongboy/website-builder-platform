@@ -40,8 +40,15 @@ test('SCRUM-137 - register, create a template website, edit and save content, an
   await paragraph.dblclick();
   await expect(paragraph).toHaveAttribute('contenteditable', 'true');
   const savedText = `SCRUM-137 browser edit ${Date.now()}`;
-  await paragraph.fill(savedText);
+  // GrapesJS's rich-text editor listens to keyboard/input events to update its
+  // component model. Locator.fill() only changed the iframe DOM and bypassed
+  // that model, so use the same select-and-type interaction as a person.
+  await paragraph.click();
+  await paragraph.press('ControlOrMeta+A');
+  await page.keyboard.type(savedText);
+  await paragraph.press('Tab');
   await expect(canvas.locator('body')).toContainText(savedText);
+  await expect(page.getByText('Unsaved changes', { exact: true })).toBeVisible();
   const editorUrl = page.url();
   const websiteId = editorUrl.match(/\/editor\/([^/?#]+)/)?.[1];
   expect(websiteId, 'Editor route should include the created website ID').toBeTruthy();
