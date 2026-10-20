@@ -81,7 +81,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
                 <app-status-badge [status]="site.status" type="website"></app-status-badge>
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground">
-                <span>{{ site.pageViews }}</span>
+                <span title="Page views are not tracked until analytics is available">Not tracked</span>
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap text-[13px] text-foreground-muted">{{ site.updatedAt | date:'mediumDate' }}</td>
               <td class="px-4 py-3.5 whitespace-nowrap">
@@ -140,7 +140,7 @@ import { IconComponent } from '../../../core/shared/icon.component';
               </div>
               <div>
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Page Views</p>
-                <p class="text-[13px] text-foreground">{{ selectedWebsite?.pageViews }}</p>
+                <p class="text-[13px] text-foreground" title="Page views are not tracked until analytics is available">Not tracked</p>
               </div>
               <div>
                 <p class="text-[11px] font-medium text-foreground-muted uppercase tracking-wider mb-1.5">Last Updated</p>
