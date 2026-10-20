@@ -1,3 +1,4 @@
+/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
 package com.websitebuilder.platform.config;
 
 import jakarta.annotation.PostConstruct;
@@ -11,7 +12,11 @@ import javax.sql.DataSource;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/** Prevents the E2E profile from connecting to a developer or remote database. */
+/**
+ * Checks that the E2E profile uses the dedicated database URL and expected database identity.
+ * The private-address allowance supports Docker bridge networking; an intentionally configured
+ * tunnel to a private remote database with the exact expected identity could also pass this check.
+ */
 @Component
 @Profile("e2e")
 public class E2eDatabaseGuard {
@@ -49,7 +54,10 @@ public class E2eDatabaseGuard {
                         || !"website_builder_e2e".equals(database)
                         || !"website_builder".equals(username)) {
                     throw new IllegalStateException(
-                            "E2E profile connected to an unexpected PostgreSQL server, port, database, or user.");
+                            "E2E profile connected to an unexpected PostgreSQL identity: address=" + serverAddress
+                                    + ", port=" + serverPort + ", database=" + database + ", user=" + username
+                                    + ". Expected a local/private server on port 5432 with database "
+                                    + "website_builder_e2e and user website_builder.");
                 }
             }
         }
@@ -61,11 +69,27 @@ public class E2eDatabaseGuard {
         }
         try {
             InetAddress resolvedAddress = InetAddress.getByName(address);
+            if (isIpv4MappedIpv6(resolvedAddress.getAddress())) {
+                byte[] mapped = resolvedAddress.getAddress();
+                resolvedAddress = InetAddress.getByAddress(new byte[] {mapped[12], mapped[13], mapped[14], mapped[15]});
+            }
             return resolvedAddress.isLoopbackAddress()
                     || resolvedAddress.isSiteLocalAddress()
                     || resolvedAddress.isLinkLocalAddress();
         } catch (UnknownHostException exception) {
             return false;
         }
+    }
+
+    private boolean isIpv4MappedIpv6(byte[] address) {
+        if (address.length != 16) {
+            return false;
+        }
+        for (int index = 0; index < 10; index++) {
+            if (address[index] != 0) {
+                return false;
+            }
+        }
+        return (address[10] & 0xff) == 0xff && (address[11] & 0xff) == 0xff;
     }
 }

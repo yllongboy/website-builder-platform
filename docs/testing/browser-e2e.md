@@ -1,3 +1,4 @@
+/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
 # Browser end-to-end tests
 
 The Playwright suite opens Chromium and clicks through the rendered Builder and Admin apps. It registers a uniquely named Builder user, creates a site from a free template, edits text in the GrapesJS canvas, saves it, reloads the editor to verify the saved content, and renames the site. It also signs into Admin, checks that dashboard metrics have loaded, updates the platform site name, checks it after reload, and restores the original value.
@@ -6,7 +7,7 @@ The Playwright suite opens Chromium and clicks through the rendered Builder and 
 
 The suite is opt-in and refuses to load unless `E2E_USE_DISPOSABLE_ENV=true` is set. Playwright launches the API with the dedicated `e2e` Spring profile on port `8081`, and launches fresh Builder/Admin servers on `4200` and `4201`. It never reuses servers already listening on those ports. The apps' E2E proxy target is fixed to the E2E API at `127.0.0.1:8081`; test app URL overrides are not supported.
 
-The `e2e` profile connects only to `127.0.0.1:5433/website_builder_e2e`. An API startup guard verifies the actual JDBC URL and database username and fails startup for any other database. The suite therefore cannot point at the normal development API on port `8080` or its database on port `5432`. The E2E profile contains only local placeholder credentials and does not call Stripe, Cloudflare/R2, or publish websites.
+The `e2e` profile is configured for `127.0.0.1:5433/website_builder_e2e`. An early API guard rejects datasource and Flyway connection overrides, and a startup check verifies the JDBC URL, connected server address/port, database, and user. Private server addresses are accepted to support Docker bridge networking. A deliberately configured tunnel to a private remote server could pass if it presents the exact expected URL and database identity, so run this suite only with the documented disposable database. It cannot point at the normal development API on port `8080` or its database on port `5432`. The E2E profile contains only local placeholder credentials and does not call Stripe, Cloudflare/R2, or publish websites.
 
 ## Local run
 
