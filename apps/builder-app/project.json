@@ -59,7 +59,10 @@
       "configurations": {
         "production": { "buildTarget": "builder-app:build:production" },
         "development": { "buildTarget": "builder-app:build:development" },
-        "e2e": { "buildTarget": "builder-app:build:e2e" }
+        "e2e": {
+          "buildTarget": "builder-app:build:e2e",
+          "prebundle": false
+        }
       },
       "defaultConfiguration": "development"
     },
